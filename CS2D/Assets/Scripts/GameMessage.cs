@@ -33,6 +33,15 @@ public class ClientMessage {
 
 	public virtual void Load(BitBuffer bitBuffer) {
 	}
+
+	public virtual void Save(BitBuffer bitBuffer) {
+	}
+
+	public ClientMessageType Type {
+		get {
+			return messageType;
+		}
+	}
 }
 
 //from client to server
@@ -42,9 +51,23 @@ public class ConnectPlayerMessage : ClientMessage {
 	public ConnectPlayerMessage() : base(ClientMessageType.CONNECT_PLAYER) {		
 	}
 
+	public ConnectPlayerMessage(int playerId) : base(ClientMessageType.CONNECT_PLAYER) {		
+	}
+
 	public override void Load (BitBuffer bitBuffer) {
 		base.Load (bitBuffer);
 		playerId = bitBuffer.GetInt ();
+	}
+
+	public override void Save(BitBuffer bitBuffer) {
+		base.Save(bitBuffer);
+		bitBuffer.PutInt(playerId);
+	}
+
+	public int PlayerId {
+		get {
+			return playerId;
+		}
 	}
 }
 	

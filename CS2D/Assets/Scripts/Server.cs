@@ -9,11 +9,11 @@ public class Server : MonoBehaviour {
 	List<Player> players = new List<Player>();
 
 	void Start() {
-		channel = new Channel ("localhost", port);
+		channel = new Channel(null, port);
 	}
 
 	void OnDestroy() {
-		channel.Disconnect ();
+		channel.Disconnect();
 	}
 
 	void Update() {
@@ -24,12 +24,15 @@ public class Server : MonoBehaviour {
 			int messageCount = bitBuffer.GetInt ();
 			for (int i = 0; i < messageCount; i++) {
 				//parse message
-				ReadClientMessage(bitBuffer);
+				ClientMessage clientMessage = ReadClientMessage(bitBuffer);
+				if (clientMessage != null) {
+					ProcessClientMessage(clientMessage);
+				}
 			}
 		}
 	}
 
-	void ReadClientMessage(BitBuffer bitBuffer) {
+	ClientMessage ReadClientMessage(BitBuffer bitBuffer) {
 		ClientMessageType messageType = bitBuffer.GetEnum<ClientMessageType> ((int)ClientMessageType.TOTAL);
 		ClientMessage clientMessage = null;
 		switch (messageType) {
@@ -43,31 +46,41 @@ public class Server : MonoBehaviour {
 			clientMessage = new PlayerInputMessage ();
 			break;
 		default:
-			Debug.LogError ("Got a client message that cannot be understood");
-			return;
+			Debug.LogError("Got a client message that cannot be understood");
+			return null;
 		}
-		clientMessage.Load (bitBuffer);
+		clientMessage.Load(bitBuffer);
+		return clientMessage;
 	}
 
-	public void ConnectPlayer(int playerId) {	
+	void ProcessClientMessage(ClientMessage clientMessage) {
+		switch (clientMessage.Type) {
+		case ClientMessageType.CONNECT_PLAYER:
+			ProcessConnectPlayer(clientMessage as ConnectPlayerMessage);
+			break;
+		}
+	}
+
+	public void ProcessConnectPlayer(ConnectPlayerMessage connectPlayerMessage) {
+		int playerId = connectPlayerMessage.PlayerId;
 		Player player = GetPlayerWithId (playerId);
 		if (player != null) {
 			DisconnectPlayer (player);
 		}
 		GameObject playerGO = new GameObject("Player " + playerId);
 		player = playerGO.AddComponent<Player> ();
-		players.Add (player);
+		players.Add(player);
 	}
 
 	public void DisconnectPlayer(Player player) {
-		Destroy (player.gameObject);
-		players.Remove (player);
+		Destroy(player.gameObject);
+		players.Remove(player);
 	}
 
 	Player GetPlayerWithId(int playerId) {
 		for (int i = 0; i < players.Count; i++) {
-			if (players [i].id == playerId) {
-				return players [i];
+			if (players[i].id == playerId) {
+				return players[i];
 			}
 		}
 		return null;

@@ -16,7 +16,11 @@ public class Channel {
 
 	public Channel(string ip, int port) {
 		try {
-			udpClient.Connect(new IPEndPoint(IPAddress.Parse(ip), port));
+			if (ip == null) {				
+				udpClient.Connect(new IPEndPoint(IPAddress.Any, port));
+			} else {
+				udpClient.Connect(new IPEndPoint(IPAddress.Parse(ip), port));
+			}
 			Thread receiveThread = new Thread(Receive);
 			receiveThread.Start();
 		} catch (Exception e) {
