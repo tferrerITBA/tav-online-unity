@@ -10,16 +10,15 @@ public class Channel {
 
 	private const int CONNECTION_CLOSED_CODE = 10054;
 
-	private UdpClient udpClient = new UdpClient();
+	private UdpClient udpClient;
 	private System.Object bufferLock = new System.Object();
 	private List<Packet> packetBuffer = new List<Packet>();
 
-	public Channel(string ip, int port) {
+	public Channel(string ip, int receivePort, int sendPort) {
 		try {
-			if (ip == null) {				
-				udpClient.Connect(new IPEndPoint(IPAddress.Any, port));
-			} else {
-				udpClient.Connect(new IPEndPoint(IPAddress.Parse(ip), port));
+			udpClient = new UdpClient(receivePort);
+			if (ip != null) {				
+				udpClient.Connect(new IPEndPoint(IPAddress.Parse(ip), sendPort));
 			}
 			Thread receiveThread = new Thread(Receive);
 			receiveThread.Start();
@@ -68,9 +67,9 @@ public class Channel {
 		}
 	}
 
-	public void Send(Packet packet) {		
-		if (udpClient != null) {
-			udpClient.Send(packet.buffer.GetBuffer().GetBuffer(), packet.buffer.GetAvailableByteCount());
+	public void Send(Packet packet, IPEndPoint endPoint) {		
+		if (udpClient != null) {	
+			udpClient.Send(packet.buffer.GetBuffer().GetBuffer(), packet.buffer.GetAvailableByteCount(), endPoint);
 		}
 	}
 

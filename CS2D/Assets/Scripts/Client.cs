@@ -4,13 +4,14 @@ using UnityEngine;
 
 public class Client : MonoBehaviour {
 
-	public int port;
+	public int serverPort;
+	public int clientPort;
 	Channel channel;
 
 	public int playerId;
 
 	void Start() {
-		channel = new Channel(null, port);
+		channel = new Channel("127.0.0.1", clientPort, serverPort);
 	}
 
 	void OnDestroy() {
