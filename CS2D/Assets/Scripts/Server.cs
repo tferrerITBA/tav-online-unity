@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System.Net;
 
 public class Server : MonoBehaviour {
 
@@ -8,6 +9,7 @@ public class Server : MonoBehaviour {
 	public int clientPort;
 	Channel channel;
 	List<Player> players = new List<Player>();
+	List<ServerMessage> outMessages = new List<ServerMessage>();
 
 	void Start() {
 		channel = new Channel(null, serverPort, clientPort);
@@ -18,27 +20,43 @@ public class Server : MonoBehaviour {
 	}
 
 	void Update() {
-		Packet packet = channel.GetPacket ();
-		if (packet != null) {
+		Packet inPacket = channel.GetPacket ();
+		if (inPacket != null) {
 			//read it!
-			BitBuffer bitBuffer = packet.buffer;
+			BitBuffer bitBuffer = inPacket.buffer;
 			int messageCount = bitBuffer.GetInt ();
 			for (int i = 0; i < messageCount; i++) {
 				//parse message
-				ClientMessage clientMessage = ReadClientMessage(bitBuffer);
+				ClientMessage clientMessage = ReadClientMessage(bitBuffer, inPacket.fromEndPoint);
 				if (clientMessage != null) {
 					ProcessClientMessage(clientMessage);
 				}
 			}
 		}
+
+		if (outMessages.Count > 0) {
+			Packet outPacket = new Packet ();
+			outPacket.buffer.PutInt (outMessages.Count);
+			for (int i = 0; i < outMessages.Count; i++) {
+				ServerMessage serverMessage = outMessages [i];
+				serverMessage.Save (outPacket.buffer);
+			}
+			outMessages.Clear ();
+
+			outPacket.buffer.Flip ();
+			for (int i = 0; i < players.Count; i++) {
+				Player player = players [i];
+				channel.Send (outPacket, player.endPoint);
+			}
+		}
 	}
 
-	ClientMessage ReadClientMessage(BitBuffer bitBuffer) {
+	ClientMessage ReadClientMessage(BitBuffer bitBuffer, IPEndPoint clientEndPoint) {
 		ClientMessageType messageType = bitBuffer.GetEnum<ClientMessageType> ((int)ClientMessageType.TOTAL);
 		ClientMessage clientMessage = null;
 		switch (messageType) {
 		case ClientMessageType.CONNECT_PLAYER:
-			clientMessage = new ConnectPlayerMessage ();
+			clientMessage = new ConnectPlayerMessage (clientEndPoint);
 			break;
 		case ClientMessageType.DISCONNECT_PLAYER:
 			clientMessage = new DisconnectPlayerMessage ();
@@ -70,7 +88,11 @@ public class Server : MonoBehaviour {
 		}
 		GameObject playerGO = new GameObject("Player " + playerId);
 		player = playerGO.AddComponent<Player> ();
+		player.endPoint = connectPlayerMessage.EndPoint;
 		players.Add(player);
+
+		PlayerConnectedMessage playerConnectedMessage = new PlayerConnectedMessage (playerId);
+		outMessages.Add (playerConnectedMessage);
 	}
 
 	public void DisconnectPlayer(Player player) {

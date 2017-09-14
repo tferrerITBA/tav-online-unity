@@ -1,6 +1,7 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using System.Net;
 
 public enum ServerMessageType {
 	PLAYER_CONNECTED,
@@ -21,6 +22,19 @@ public class ServerMessage {
 
 	public ServerMessage(ServerMessageType messageType) {
 		this.messageType = messageType;
+	}
+
+	public virtual void Load(BitBuffer bitBuffer) {
+	}
+
+	public virtual void Save(BitBuffer bitBuffer) {
+		bitBuffer.PutEnum(messageType, (int)ServerMessageType.TOTAL);
+	}
+
+	public ServerMessageType Type {
+		get {
+			return messageType;
+		}
 	}
 }
 
@@ -49,10 +63,14 @@ public class ClientMessage {
 
 public class ConnectPlayerMessage : ClientMessage {
 	int playerId;
-	public ConnectPlayerMessage() : base(ClientMessageType.CONNECT_PLAYER) {		
+	IPEndPoint endPoint;
+
+	public ConnectPlayerMessage(IPEndPoint endPoint) : base(ClientMessageType.CONNECT_PLAYER) {		
+		this.endPoint = endPoint;
 	}
 
 	public ConnectPlayerMessage(int playerId) : base(ClientMessageType.CONNECT_PLAYER) {		
+		this.playerId = playerId;
 	}
 
 	public override void Load (BitBuffer bitBuffer) {
@@ -70,10 +88,17 @@ public class ConnectPlayerMessage : ClientMessage {
 			return playerId;
 		}
 	}
+
+	public IPEndPoint EndPoint {
+		get {
+			return endPoint;
+		}
+	}
 }
 	
 public class DisconnectPlayerMessage : ClientMessage {
 	int playerId;
+
 	public DisconnectPlayerMessage() : base(ClientMessageType.DISCONNECT_PLAYER) {		
 	}
 
@@ -91,7 +116,29 @@ public class PlayerInputMessage : ClientMessage {
 //from server to client
 
 public class PlayerConnectedMessage : ServerMessage {
+	int playerId;
+
 	public PlayerConnectedMessage() : base(ServerMessageType.PLAYER_CONNECTED) {
+	}
+
+	public PlayerConnectedMessage(int playerId) : base(ServerMessageType.PLAYER_CONNECTED) {
+		this.playerId = playerId;
+	}
+
+	public override void Load (BitBuffer bitBuffer) {
+		base.Load (bitBuffer);
+		playerId = bitBuffer.GetInt ();
+	}
+
+	public override void Save(BitBuffer bitBuffer) {
+		base.Save(bitBuffer);
+		bitBuffer.PutInt(playerId);
+	}
+
+	public int PlayerId {
+		get {
+			return playerId;
+		}
 	}
 }
 

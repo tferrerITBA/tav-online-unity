@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using UnityEngine;
 using System.IO;
+using System.Net;
 
 public class Packet : GenericPoolableObject {
 
@@ -11,6 +12,7 @@ public class Packet : GenericPoolableObject {
 	public const int BUFFER_CAPACITY = 1024 * 1024;
 
 	public BitBuffer buffer = new BitBuffer(new MemoryStream(BUFFER_CAPACITY));
+	public IPEndPoint fromEndPoint;
 
 	public static Packet Obtain() {
 		Packet packet = null;

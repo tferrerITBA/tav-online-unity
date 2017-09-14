@@ -54,6 +54,7 @@ public class Channel {
 				Packet packet = Packet.Obtain();
 				int byteCount = udpClient.Client.ReceiveFrom(packet.buffer.GetBuffer().GetBuffer(), ref remoteEndPoint);
 				packet.buffer.SetAvailableByteCount(byteCount);
+				packet.fromEndPoint = remoteEndPoint as IPEndPoint;
 				lock (bufferLock) {
 					packetBuffer.Add(packet);
 				}
