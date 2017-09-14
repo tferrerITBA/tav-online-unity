@@ -15,8 +15,8 @@ public class Player : MonoBehaviour {
 	// Update is called once per frame
 	void Update () {
 		//this.transform.localRotation;
-		if (input.shoot) {
-			
-		}
+//		if (input.shoot) {
+//			
+//		}
 	}		
 }

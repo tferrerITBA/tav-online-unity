@@ -34,3 +34,4 @@ sysinfo.txt
 *.unitypackage
 CS2D/Library
 CS2D/Temp
+CS2D/obj

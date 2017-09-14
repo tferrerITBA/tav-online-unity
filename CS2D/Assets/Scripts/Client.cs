@@ -21,7 +21,12 @@ public class Client : MonoBehaviour {
 	void Update() {
 		if (Input.GetKeyDown(KeyCode.Space)) {
 			//send player connect message
-			//channel.Send();
+			Packet p = new Packet();
+			ConnectPlayerMessage connectPlayerMessage = new ConnectPlayerMessage(playerId);
+			p.buffer.PutInt(1);
+			connectPlayerMessage.Save(p.buffer);
+			p.buffer.Flip ();
+			channel.Send(p);
 		}
 	}
 }

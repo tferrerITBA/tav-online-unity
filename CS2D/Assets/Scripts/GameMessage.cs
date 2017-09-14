@@ -35,6 +35,7 @@ public class ClientMessage {
 	}
 
 	public virtual void Save(BitBuffer bitBuffer) {
+		bitBuffer.PutEnum(messageType, (int)ClientMessageType.TOTAL);
 	}
 
 	public ClientMessageType Type {
