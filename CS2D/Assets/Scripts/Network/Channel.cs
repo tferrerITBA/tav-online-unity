@@ -67,9 +67,13 @@ public class Channel {
 		}
 	}
 
-	public void Send(Packet packet, IPEndPoint endPoint) {		
+	public void Send(Packet packet, IPEndPoint endPoint = null) {		
 		if (udpClient != null) {	
-			udpClient.Send(packet.buffer.GetBuffer().GetBuffer(), packet.buffer.GetAvailableByteCount(), endPoint);
+			if (endPoint == null) {
+				udpClient.Send (packet.buffer.GetBuffer ().GetBuffer (), packet.buffer.GetAvailableByteCount ());
+			} else {
+				udpClient.Send (packet.buffer.GetBuffer ().GetBuffer (), packet.buffer.GetAvailableByteCount (), endPoint);
+			}
 		}
 	}
 
