@@ -77,6 +77,9 @@ public class Server : MonoBehaviour {
 		case ClientMessageType.CONNECT_PLAYER:
 			ProcessConnectPlayer(clientMessage as ConnectPlayerMessage);
 			break;
+		case ClientMessageType.PLAYER_INPUT:
+			ProcessPlayerInput (clientMessage as PlayerInputMessage);
+			break;
 		}
 	}
 
@@ -93,6 +96,12 @@ public class Server : MonoBehaviour {
 
 		PlayerConnectedMessage playerConnectedMessage = new PlayerConnectedMessage (playerId);
 		outMessages.Add (playerConnectedMessage);
+	}
+
+	public void ProcessPlayerInput(PlayerInputMessage playerInputMessage) {
+		if (playerInputMessage.Input.up) {
+			Debug.Log ("up!");
+		}
 	}
 
 	public void DisconnectPlayer(Player player) {

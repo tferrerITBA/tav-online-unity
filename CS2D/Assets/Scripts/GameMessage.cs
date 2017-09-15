@@ -109,7 +109,30 @@ public class DisconnectPlayerMessage : ClientMessage {
 }
 
 public class PlayerInputMessage : ClientMessage {
-	public PlayerInputMessage() : base(ClientMessageType.PLAYER_INPUT) {		
+	PlayerInput playerInput;
+
+	public PlayerInputMessage() : base(ClientMessageType.PLAYER_INPUT) {
+		this.playerInput = new PlayerInput ();
+	}
+
+	public PlayerInputMessage(PlayerInput playerInput) : base(ClientMessageType.PLAYER_INPUT) {
+		this.playerInput = playerInput;
+	}
+
+	public override void Load (BitBuffer bitBuffer) {
+		base.Load (bitBuffer);
+		playerInput.Load (bitBuffer);
+	}
+
+	public override void Save(BitBuffer bitBuffer) {
+		base.Save(bitBuffer);
+		playerInput.Save (bitBuffer);
+	}
+
+	public PlayerInput Input {
+		get {
+			return playerInput;
+		}
 	}
 }
 
