@@ -10,6 +10,7 @@ public class Server : MonoBehaviour {
 	public int clientPort;
 	private Channel channel;
 	public float fakeDelay;
+	public float fakePacketLoss;
 
 	[Header("Game")]
 	public Object playerPrefab;
@@ -65,10 +66,13 @@ public class Server : MonoBehaviour {
 			}
 
 			outPacket.buffer.Flip ();
-			for (int i = 0; i < players.Count; i++) {
-				Player player = players [i];
-				channel.Send (outPacket, player.endPoint);
-			}				
+			bool shouldDropPacket = Random.Range (0.0001f, 100.0f) < fakePacketLoss;
+			if (!shouldDropPacket) {
+				for (int i = 0; i < players.Count; i++) {
+					Player player = players [i];
+					channel.Send (outPacket, player.endPoint);
+				}		
+			}
 		}
 	}
 
@@ -155,6 +159,7 @@ public class Server : MonoBehaviour {
 
 	private GameData BuildGameData() {
 		GameData gameData = new GameData ();
+		gameData.Time = Time.realtimeSinceStartup;
 		for (int i = 0; i < players.Count; i++) {
 			gameData.Players.Add (players [i].BuildPlayerData ());
 		}
