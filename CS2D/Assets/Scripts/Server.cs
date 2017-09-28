@@ -7,6 +7,8 @@ public class Server : MonoBehaviour {
 
 	public int serverPort;
 	public int clientPort;
+	public Object playerPrefab;
+
 	Channel channel;
 	List<Player> players = new List<Player>();
 	List<ServerMessage> outMessages = new List<ServerMessage>();
@@ -33,6 +35,9 @@ public class Server : MonoBehaviour {
 				}
 			}
 		}
+
+		SnapshotMessage snapshotMessage = new SnapshotMessage (BuildGameData());
+		outMessages.Add (snapshotMessage);
 
 		if (outMessages.Count > 0) {
 			Packet outPacket = new Packet ();
@@ -62,7 +67,8 @@ public class Server : MonoBehaviour {
 			clientMessage = new DisconnectPlayerMessage ();
 			break;
 		case ClientMessageType.PLAYER_INPUT:
-			clientMessage = new PlayerInputMessage ();
+			Player player = GetPlayerWithEndPoint (clientEndPoint);
+			clientMessage = new PlayerInputMessage (player);
 			break;
 		default:
 			Debug.LogError("Got a client message that cannot be understood");
@@ -89,18 +95,21 @@ public class Server : MonoBehaviour {
 		if (player != null) {
 			DisconnectPlayer (player);
 		}
-		GameObject playerGO = new GameObject("Player " + playerId);
-		player = playerGO.AddComponent<Player> ();
+
+		GameObject playerGO = Instantiate (playerPrefab) as GameObject;
+		playerGO.name = "Player " + playerId; 
+		player = playerGO.GetComponent<Player> ();
 		player.endPoint = connectPlayerMessage.EndPoint;
 		players.Add(player);
 
 		PlayerConnectedMessage playerConnectedMessage = new PlayerConnectedMessage (playerId);
 		outMessages.Add (playerConnectedMessage);
-	}
+	}		
 
 	public void ProcessPlayerInput(PlayerInputMessage playerInputMessage) {
-		if (playerInputMessage.Input.up) {
-			Debug.Log ("up!");
+		Player player = playerInputMessage.From;
+		if (player != null) {
+			player.Input = playerInputMessage.Input;
 		}
 	}
 
@@ -116,5 +125,22 @@ public class Server : MonoBehaviour {
 			}
 		}
 		return null;
+	}
+
+	public Player GetPlayerWithEndPoint(IPEndPoint endPoint) {
+		for (int i = 0; i < players.Count; i++) {
+			if (players[i].endPoint.Equals(endPoint)) {
+				return players[i];
+			}
+		}
+		return null;
+	}
+
+	private GameData BuildGameData() {
+		GameData gameData = new GameData ();
+		for (int i = 0; i < players.Count; i++) {
+			gameData.Players.Add (players [i].BuildPlayerData ());
+		}
+		return gameData;
 	}
 }

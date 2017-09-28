@@ -56,7 +56,7 @@ public class ClientMessage {
 		get {
 			return messageType;
 		}
-	}
+	}		
 }
 
 //from client to server
@@ -65,7 +65,7 @@ public class ConnectPlayerMessage : ClientMessage {
 	int playerId;
 	IPEndPoint endPoint;
 
-	public ConnectPlayerMessage(IPEndPoint endPoint) : base(ClientMessageType.CONNECT_PLAYER) {		
+	public ConnectPlayerMessage(IPEndPoint endPoint) : base(ClientMessageType.CONNECT_PLAYER) {
 		this.endPoint = endPoint;
 	}
 
@@ -106,13 +106,21 @@ public class DisconnectPlayerMessage : ClientMessage {
 		base.Load (bitBuffer);
 		playerId = bitBuffer.GetInt ();
 	}
+
+	public int PlayerId {
+		get {
+			return playerId;
+		}
+	}
 }
 
 public class PlayerInputMessage : ClientMessage {
 	PlayerInput playerInput;
+	Player player;
 
-	public PlayerInputMessage() : base(ClientMessageType.PLAYER_INPUT) {
+	public PlayerInputMessage(Player player) : base(ClientMessageType.PLAYER_INPUT) {
 		this.playerInput = new PlayerInput ();
+		this.player = player;
 	}
 
 	public PlayerInputMessage(PlayerInput playerInput) : base(ClientMessageType.PLAYER_INPUT) {
@@ -132,6 +140,12 @@ public class PlayerInputMessage : ClientMessage {
 	public PlayerInput Input {
 		get {
 			return playerInput;
+		}
+	}
+
+	public Player From {
+		get {
+			return player;
 		}
 	}
 }
@@ -171,6 +185,29 @@ public class PlayerDisconnectedMessage : ServerMessage {
 }
 
 public class SnapshotMessage : ServerMessage {
+	GameData gameData;
+
 	public SnapshotMessage() : base(ServerMessageType.SNAPSHOT) {
+		gameData = new GameData ();
+	}
+
+	public SnapshotMessage(GameData gameData) : base(ServerMessageType.SNAPSHOT) {
+		this.gameData = gameData;
+	}
+
+	public override void Load (BitBuffer bitBuffer) {
+		base.Load (bitBuffer);
+		gameData.Load (bitBuffer);
+	}
+
+	public override void Save(BitBuffer bitBuffer) {
+		base.Save(bitBuffer);
+		gameData.Save (bitBuffer);
+	}
+
+	public GameData GameSnapshot {
+		get {
+			return gameData;
+		}
 	}
 }
