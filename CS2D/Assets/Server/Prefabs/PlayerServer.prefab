@@ -207,6 +207,8 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   id: 0
   maxSpeed: 10
+  showVisualRepresentation: 0
+  visualRepresentationGO: {fileID: 1795382931138354}
 --- !u!136 &136755031382766274
 CapsuleCollider:
   m_ObjectHideFlags: 1

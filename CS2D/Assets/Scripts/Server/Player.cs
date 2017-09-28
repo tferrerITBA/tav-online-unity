@@ -5,12 +5,23 @@ using System.Net;
 
 public class Player : MonoBehaviour {
 
-	public int id;
+	private int id;
 	PlayerInput input = new PlayerInput();
 	public IPEndPoint endPoint;
 	public float maxSpeed;
+	public bool showVisualRepresentation;
+	public GameObject visualRepresentationGO;
 
 	private Transform ownTransform;
+
+	public int Id {
+		get {
+			return id;
+		}
+		set {
+			id = value;
+		}
+	}
 
 	void Awake() {
 		ownTransform = transform;
@@ -23,6 +34,7 @@ public class Player : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
+		visualRepresentationGO.SetActive (showVisualRepresentation);
 
 		//update orientation
 		int vertical = 0;
@@ -80,7 +92,8 @@ public class Player : MonoBehaviour {
 
 	public PlayerData BuildPlayerData() {
 		PlayerData playerData = new PlayerData ();
-		playerData.position = new Vector2 (ownTransform.position.x, ownTransform.position.y);
+		playerData.PlayerId = id;
+		playerData.Position = new Vector2 (ownTransform.position.x, ownTransform.position.y);
 		return playerData;
 	}
 }

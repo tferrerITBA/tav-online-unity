@@ -5,11 +5,14 @@ using System.Net;
 
 public class Server : MonoBehaviour {
 
+	[Header("Connection")]
 	public int serverPort;
 	public int clientPort;
-	public Object playerPrefab;
+	private Channel channel;
+	public float fakeDelay;
 
-	Channel channel;
+	[Header("Game")]
+	public Object playerPrefab;
 	List<Player> players = new List<Player>();
 	List<ServerMessage> outMessages = new List<ServerMessage>();
 
@@ -37,22 +40,35 @@ public class Server : MonoBehaviour {
 		}
 
 		SnapshotMessage snapshotMessage = new SnapshotMessage (BuildGameData());
+		snapshotMessage.DelayToSend = fakeDelay;
 		outMessages.Add (snapshotMessage);
 
-		if (outMessages.Count > 0) {
+		int messagesReadyToSend = 0;
+		for (int i = 0; i < outMessages.Count; i++) {			
+			ServerMessage serverMessage = outMessages [i];
+			serverMessage.Update (Time.deltaTime);
+			if (serverMessage.NeedsToBeSent) {
+				messagesReadyToSend++;
+			}
+		}
+
+		if (messagesReadyToSend > 0) {
 			Packet outPacket = new Packet ();
-			outPacket.buffer.PutInt (outMessages.Count);
+			outPacket.buffer.PutInt (messagesReadyToSend);
 			for (int i = 0; i < outMessages.Count; i++) {
 				ServerMessage serverMessage = outMessages [i];
-				serverMessage.Save (outPacket.buffer);
+				if (serverMessage.NeedsToBeSent) {
+					serverMessage.Save (outPacket.buffer);
+					outMessages.RemoveAt (i);
+					i--;
+				}
 			}
-			outMessages.Clear ();
 
 			outPacket.buffer.Flip ();
 			for (int i = 0; i < players.Count; i++) {
 				Player player = players [i];
 				channel.Send (outPacket, player.endPoint);
-			}
+			}				
 		}
 	}
 
@@ -100,6 +116,7 @@ public class Server : MonoBehaviour {
 		playerGO.name = "Player " + playerId; 
 		player = playerGO.GetComponent<Player> ();
 		player.endPoint = connectPlayerMessage.EndPoint;
+		player.Id = playerId;
 		players.Add(player);
 
 		PlayerConnectedMessage playerConnectedMessage = new PlayerConnectedMessage (playerId);
@@ -120,7 +137,7 @@ public class Server : MonoBehaviour {
 
 	Player GetPlayerWithId(int playerId) {
 		for (int i = 0; i < players.Count; i++) {
-			if (players[i].id == playerId) {
+			if (players[i].Id == playerId) {
 				return players[i];
 			}
 		}

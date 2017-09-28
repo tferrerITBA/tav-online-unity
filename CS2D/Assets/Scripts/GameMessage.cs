@@ -19,6 +19,7 @@ public enum ClientMessageType {
 
 public class ServerMessage {
 	ServerMessageType messageType;
+	float delayToSend;
 
 	public ServerMessage(ServerMessageType messageType) {
 		this.messageType = messageType;
@@ -31,9 +32,25 @@ public class ServerMessage {
 		bitBuffer.PutEnum(messageType, (int)ServerMessageType.TOTAL);
 	}
 
+	public void Update(float dt) {
+		delayToSend -= dt;
+	}		
+
 	public ServerMessageType Type {
 		get {
 			return messageType;
+		}
+	}
+
+	public bool NeedsToBeSent {
+		get {
+			return delayToSend <= 0;
+		}
+	}
+
+	public float DelayToSend {
+		set {
+			delayToSend = value;
 		}
 	}
 }
