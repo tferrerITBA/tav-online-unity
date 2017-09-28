@@ -119,11 +119,10 @@ public class DisconnectPlayerMessage : ClientMessage {
 	public DisconnectPlayerMessage() : base(ClientMessageType.DISCONNECT_PLAYER) {		
 	}
 
-	public override void Load (BitBuffer bitBuffer) {
-		base.Load (bitBuffer);
-		playerId = bitBuffer.GetInt ();
+	public DisconnectPlayerMessage(int playerId) : base(ClientMessageType.DISCONNECT_PLAYER) {		
+		this.playerId = playerId;
 	}
-
+		
 	public int PlayerId {
 		get {
 			return playerId;
@@ -133,11 +132,11 @@ public class DisconnectPlayerMessage : ClientMessage {
 
 public class PlayerInputMessage : ClientMessage {
 	PlayerInput playerInput;
-	Player player;
+	int playerId;
 
-	public PlayerInputMessage(Player player) : base(ClientMessageType.PLAYER_INPUT) {
+	public PlayerInputMessage(int playerId) : base(ClientMessageType.PLAYER_INPUT) {
 		this.playerInput = new PlayerInput ();
-		this.player = player;
+		this.playerId = playerId;			
 	}
 
 	public PlayerInputMessage(PlayerInput playerInput) : base(ClientMessageType.PLAYER_INPUT) {
@@ -160,9 +159,9 @@ public class PlayerInputMessage : ClientMessage {
 		}
 	}
 
-	public Player From {
+	public int PlayerId {
 		get {
-			return player;
+			return playerId;
 		}
 	}
 }
@@ -197,7 +196,28 @@ public class PlayerConnectedMessage : ServerMessage {
 }
 
 public class PlayerDisconnectedMessage : ServerMessage {
+	int playerId;
+
 	public PlayerDisconnectedMessage() : base(ServerMessageType.PLAYER_DISCONNECTED) {
+	}
+
+	public PlayerDisconnectedMessage(int playerId) : base(ServerMessageType.PLAYER_DISCONNECTED) {
+	}
+
+	public override void Load (BitBuffer bitBuffer) {
+		base.Load (bitBuffer);
+		playerId = bitBuffer.GetInt ();
+	}
+
+	public override void Save(BitBuffer bitBuffer) {
+		base.Save(bitBuffer);
+		bitBuffer.PutInt(playerId);
+	}
+
+	public int PlayerId {
+		get {
+			return playerId;
+		}
 	}
 }
 
