@@ -6,7 +6,7 @@ public class PlayerConnectedMessage : Message {
 	int playerId;
 
 	public static PlayerConnectedMessage CreatePlayerConnectedMessageToSend(Player receiver, int playerConnectedId) {
-		int messageId = receiver.GetNewReliableSendInEveryPacketMessageId ();
+		int messageId = receiver.CommunicationManager.GetNewReliableSendInEveryPacketMessageId ();
 		return new PlayerConnectedMessage (messageId, playerConnectedId);
 	}
 

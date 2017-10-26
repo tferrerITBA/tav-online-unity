@@ -12,13 +12,7 @@ public class Player : MonoBehaviour {
 	public bool showVisualRepresentation;
 	public GameObject visualRepresentationGO;
 
-	public List<Message> outMessages = new List<Message> ();
-
-	int lastReceivedReliableMessageId = -1;
-	int lastReceivedSendInEveryFramePacketMessageId = -1;
-	int reliableSendInEveryPacketMessageId = 0;
-	int reliableMessageId = 0;
-
+	private CommunicationManager communicationManager = new CommunicationManager();
 	private Transform ownTransform;
 
 	public int Id {
@@ -38,9 +32,23 @@ public class Player : MonoBehaviour {
 	void Start () {
 		
 	}
+
+	// Read in messages
+	void ProcessMessages() {		
+		while (communicationManager.HasMessage ()) {
+			Message message = communicationManager.GetMessage ();
+			switch (message.Type) {
+			case MessageType.PLAYER_INPUT:
+				ProcessPlayerInput (message as PlayerInputMessage);
+				break;
+			}
+		}
+	}
 	
 	// Update is called once per frame
 	void Update () {
+		ProcessMessages ();
+
 		visualRepresentationGO.SetActive (showVisualRepresentation);
 
 		//update orientation
@@ -104,41 +112,13 @@ public class Player : MonoBehaviour {
 		return playerData;
 	}
 
-	public int GetNewReliableSendInEveryPacketMessageId() {
-		return ++reliableSendInEveryPacketMessageId;
-	}
-
-	public int GetNewReliableMessageId() {
-		return ++reliableMessageId;
-	}
-
-	public int ReliableSendInEveryPacketMessageId {
+	public CommunicationManager CommunicationManager {
 		get {
-			return reliableSendInEveryPacketMessageId;
+			return communicationManager;
 		}
 	}
-
-	public int ReliableMessageId {
-		get {
-			return reliableMessageId;
-		}
-	}
-
-	public int LastReceivedReliableMessageId {
-		get {
-			return lastReceivedReliableMessageId;
-		}
-		set {
-			lastReceivedReliableMessageId = value;
-		}
-	}
-
-	public int LastReliableSendInEveryPacketMessageIdReceived {
-		get {
-			return lastReceivedSendInEveryFramePacketMessageId;
-		}
-		set {
-			lastReceivedSendInEveryFramePacketMessageId = value;
-		}
+		
+	void ProcessPlayerInput(PlayerInputMessage playerInputMessage) {		
+		Input = playerInputMessage.Input;
 	}
 }

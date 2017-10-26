@@ -6,7 +6,7 @@ public class PlayerDisconnectedMessage : Message {
 	int playerId;
 
 	public static PlayerDisconnectedMessage CreatePlayerDisconnectedMessageToSend(Player receiver, int playerDisconnectedId) {
-		int messageId = receiver.GetNewReliableSendInEveryPacketMessageId ();
+		int messageId = receiver.CommunicationManager.GetNewReliableSendInEveryPacketMessageId ();
 		return new PlayerDisconnectedMessage (messageId, playerDisconnectedId);
 	}
 
