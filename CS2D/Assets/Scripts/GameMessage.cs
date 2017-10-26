@@ -3,143 +3,125 @@ using System.Collections.Generic;
 using UnityEngine;
 using System.Net;
 
-public enum ServerMessageType {
+public enum MessageType {	
+	ACK_RELIABLE_SEND_EVERY_PACKET,
+	ACK_RELIABLE_MAX_WAIT_TIME,
+	//server to client message type
 	PLAYER_CONNECTED,
 	PLAYER_DISCONNECTED,
 	SNAPSHOT,
-	TOTAL
-}
-
-public enum ClientMessageType {
+	//client to server message type
 	CONNECT_PLAYER,
 	DISCONNECT_PLAYER,
 	PLAYER_INPUT,
 	TOTAL
 }
 
-public class ServerMessage {
-	ServerMessageType messageType;
-	float delayToSend;
+public enum ReliabilityType {
+	UNRELIABLE,
+	RELIABLE_SEND_EVERY_PACKET,
+	RELIABLE_MAX_WAIT_TIME
+}
 
-	public ServerMessage(ServerMessageType messageType) {
+public class Message {
+	MessageType messageType;
+	ReliabilityType reliabilityType;
+	int id;
+	float timeToSend;
+	float reliableMaxTime;
+	IPEndPoint fromEndPoint;
+
+	public Message(int id, MessageType messageType, ReliabilityType reliabilityType) {
 		this.messageType = messageType;
-	}
-
-	public virtual void Load(BitBuffer bitBuffer) {
-	}
-
-	public virtual void Save(BitBuffer bitBuffer) {
-		bitBuffer.PutEnum(messageType, (int)ServerMessageType.TOTAL);
+		this.id = id;
+		this.reliabilityType = reliabilityType;
 	}
 
 	public void Update(float dt) {
-		delayToSend -= dt;
-	}		
+		timeToSend -= dt;
+	}	
 
-	public ServerMessageType Type {
+	public virtual void Load(BitBuffer bitBuffer) {
+		id = bitBuffer.GetInt ();
+	}
+
+	public virtual void Save(BitBuffer bitBuffer) {
+		bitBuffer.PutEnum(messageType, (int)MessageType.TOTAL);
+		bitBuffer.PutInt (id);
+	}		
+		
+	public MessageType Type {
 		get {
 			return messageType;
+		}
+	}
+
+	public ReliabilityType Reliability {
+		get {
+			return reliabilityType;
 		}
 	}
 
 	public bool NeedsToBeSent {
 		get {
-			return delayToSend <= 0;
+			return timeToSend <= 0;
 		}
 	}
 
-	public float DelayToSend {
+	public float TimeToSend {
 		set {
-			delayToSend = value;
-		}
-	}
-}
-
-public class ClientMessage {
-	ClientMessageType messageType;
-
-	public ClientMessage(ClientMessageType messageType) {
-		this.messageType = messageType;
-	}
-
-	public virtual void Load(BitBuffer bitBuffer) {
-	}
-
-	public virtual void Save(BitBuffer bitBuffer) {
-		bitBuffer.PutEnum(messageType, (int)ClientMessageType.TOTAL);
-	}
-
-	public ClientMessageType Type {
-		get {
-			return messageType;
-		}
-	}		
-}
-
-//from client to server
-
-public class ConnectPlayerMessage : ClientMessage {
-	int playerId;
-	IPEndPoint endPoint;
-
-	public ConnectPlayerMessage(IPEndPoint endPoint) : base(ClientMessageType.CONNECT_PLAYER) {
-		this.endPoint = endPoint;
-	}
-
-	public ConnectPlayerMessage(int playerId) : base(ClientMessageType.CONNECT_PLAYER) {		
-		this.playerId = playerId;
-	}
-
-	public override void Load (BitBuffer bitBuffer) {
-		base.Load (bitBuffer);
-		playerId = bitBuffer.GetInt ();
-	}
-
-	public override void Save(BitBuffer bitBuffer) {
-		base.Save(bitBuffer);
-		bitBuffer.PutInt(playerId);
-	}
-
-	public int PlayerId {
-		get {
-			return playerId;
+			timeToSend = value;
 		}
 	}
 
-	public IPEndPoint EndPoint {
+	public float ReliableMaxTime {
 		get {
-			return endPoint;
+			return reliableMaxTime;
+		}
+		set {
+			reliableMaxTime = value;
+		}
+	}	
+
+	public int ReliabilityId {
+		get {
+			return id;
+		}
+	}
+
+	public IPEndPoint From {
+		get {
+			return fromEndPoint;
+		}
+		set {
+			fromEndPoint = value;
 		}
 	}
 }
 	
-public class DisconnectPlayerMessage : ClientMessage {
-	int playerId;
+//from client to server
+	
+public class DisconnectPlayerMessage : Message {
 
-	public DisconnectPlayerMessage() : base(ClientMessageType.DISCONNECT_PLAYER) {		
+	//used by server
+	public DisconnectPlayerMessage() : base(-1, MessageType.DISCONNECT_PLAYER, ReliabilityType.RELIABLE_MAX_WAIT_TIME) {		
 	}
 
-	public DisconnectPlayerMessage(int playerId) : base(ClientMessageType.DISCONNECT_PLAYER) {		
-		this.playerId = playerId;
-	}
-		
-	public int PlayerId {
-		get {
-			return playerId;
-		}
-	}
+	//used by client
+	public DisconnectPlayerMessage(int id, int playerId) : base(id, MessageType.DISCONNECT_PLAYER, ReliabilityType.RELIABLE_MAX_WAIT_TIME) {
+	}		
 }
 
-public class PlayerInputMessage : ClientMessage {
+public class PlayerInputMessage : Message {
 	PlayerInput playerInput;
-	int playerId;
 
-	public PlayerInputMessage(int playerId) : base(ClientMessageType.PLAYER_INPUT) {
+	//used by server
+	public PlayerInputMessage() : base(-1, MessageType.PLAYER_INPUT, ReliabilityType.UNRELIABLE) {
 		this.playerInput = new PlayerInput ();
-		this.playerId = playerId;			
 	}
 
-	public PlayerInputMessage(PlayerInput playerInput) : base(ClientMessageType.PLAYER_INPUT) {
+	//used by client
+	public PlayerInputMessage(int id, PlayerInput playerInput) : base(id, MessageType.PLAYER_INPUT, ReliabilityType.UNRELIABLE) {
 		this.playerInput = playerInput;
 	}
 
@@ -158,77 +140,18 @@ public class PlayerInputMessage : ClientMessage {
 			return playerInput;
 		}
 	}
-
-	public int PlayerId {
-		get {
-			return playerId;
-		}
-	}
 }
 
-//from server to client
-
-public class PlayerConnectedMessage : ServerMessage {
-	int playerId;
-
-	public PlayerConnectedMessage() : base(ServerMessageType.PLAYER_CONNECTED) {
-	}
-
-	public PlayerConnectedMessage(int playerId) : base(ServerMessageType.PLAYER_CONNECTED) {
-		this.playerId = playerId;
-	}
-
-	public override void Load (BitBuffer bitBuffer) {
-		base.Load (bitBuffer);
-		playerId = bitBuffer.GetInt ();
-	}
-
-	public override void Save(BitBuffer bitBuffer) {
-		base.Save(bitBuffer);
-		bitBuffer.PutInt(playerId);
-	}
-
-	public int PlayerId {
-		get {
-			return playerId;
-		}
-	}
-}
-
-public class PlayerDisconnectedMessage : ServerMessage {
-	int playerId;
-
-	public PlayerDisconnectedMessage() : base(ServerMessageType.PLAYER_DISCONNECTED) {
-	}
-
-	public PlayerDisconnectedMessage(int playerId) : base(ServerMessageType.PLAYER_DISCONNECTED) {
-	}
-
-	public override void Load (BitBuffer bitBuffer) {
-		base.Load (bitBuffer);
-		playerId = bitBuffer.GetInt ();
-	}
-
-	public override void Save(BitBuffer bitBuffer) {
-		base.Save(bitBuffer);
-		bitBuffer.PutInt(playerId);
-	}
-
-	public int PlayerId {
-		get {
-			return playerId;
-		}
-	}
-}
-
-public class SnapshotMessage : ServerMessage {
+public class SnapshotMessage : Message {
 	GameData gameData;
 
-	public SnapshotMessage() : base(ServerMessageType.SNAPSHOT) {
+	//used by client
+	public SnapshotMessage() : base(-1, MessageType.SNAPSHOT, ReliabilityType.UNRELIABLE) {
 		gameData = new GameData ();
 	}
 
-	public SnapshotMessage(GameData gameData) : base(ServerMessageType.SNAPSHOT) {
+	//used by server
+	public SnapshotMessage(int id, GameData gameData) : base(id, MessageType.SNAPSHOT, ReliabilityType.UNRELIABLE) {
 		this.gameData = gameData;
 	}
 

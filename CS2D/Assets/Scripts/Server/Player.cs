@@ -12,6 +12,13 @@ public class Player : MonoBehaviour {
 	public bool showVisualRepresentation;
 	public GameObject visualRepresentationGO;
 
+	public List<Message> outMessages = new List<Message> ();
+
+	int lastReceivedReliableMessageId = -1;
+	int lastReceivedSendInEveryFramePacketMessageId = -1;
+	int reliableSendInEveryPacketMessageId = 0;
+	int reliableMessageId = 0;
+
 	private Transform ownTransform;
 
 	public int Id {
@@ -95,5 +102,43 @@ public class Player : MonoBehaviour {
 		playerData.PlayerId = id;
 		playerData.Position = new Vector2 (ownTransform.position.x, ownTransform.position.y);
 		return playerData;
+	}
+
+	public int GetNewReliableSendInEveryPacketMessageId() {
+		return ++reliableSendInEveryPacketMessageId;
+	}
+
+	public int GetNewReliableMessageId() {
+		return ++reliableMessageId;
+	}
+
+	public int ReliableSendInEveryPacketMessageId {
+		get {
+			return reliableSendInEveryPacketMessageId;
+		}
+	}
+
+	public int ReliableMessageId {
+		get {
+			return reliableMessageId;
+		}
+	}
+
+	public int LastReceivedReliableMessageId {
+		get {
+			return lastReceivedReliableMessageId;
+		}
+		set {
+			lastReceivedReliableMessageId = value;
+		}
+	}
+
+	public int LastReliableSendInEveryPacketMessageIdReceived {
+		get {
+			return lastReceivedSendInEveryFramePacketMessageId;
+		}
+		set {
+			lastReceivedSendInEveryFramePacketMessageId = value;
+		}
 	}
 }
