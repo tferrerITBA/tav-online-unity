@@ -57,10 +57,10 @@ public class CommunicationManager {
 
 	public void ReceiveMessage(Message message) {
 		if (message.Reliability == ReliabilityType.RELIABLE_MAX_WAIT_TIME) {
+			SendMessage (AckReliableMessage.CreateAckReliableMessageMessageToSend (message.ReliabilityId));
 			if (message.ReliabilityId == (LastReceivedReliableMessageId + 1)) {
 				//accept it... valid message since its +1 since the last received
 				//send to the sender that its reliable message has been received
-				SendMessage (AckReliableMessage.CreateAckReliableMessageMessageToSend (message.ReliabilityId));
 				LastReceivedReliableMessageId = message.ReliabilityId;
 			} else {
 				//we need to discard it... either its been already processed or out of order
@@ -69,10 +69,10 @@ public class CommunicationManager {
 			//send to the sender that its reliable message has been received
 			SendMessage (AckReliableMessage.CreateAckReliableMessageMessageToSend (message.ReliabilityId));
 		} else if (message.Reliability == ReliabilityType.RELIABLE_SEND_EVERY_PACKET) {
+			SendMessage (AckReliableSendEveryFrameMessage.CreateAckReliableSendEveryFrameMessageMessageToSend (message.ReliabilityId));
 			if (message.ReliabilityId > LastReliableSendInEveryPacketMessageIdReceived) {	
 				//accept it... valid message since its +1 since the last received
 				//send to the sender that its reliable message has been received
-				SendMessage (AckReliableSendEveryFrameMessage.CreateAckReliableSendEveryFrameMessageMessageToSend (message.ReliabilityId));
 				LastReliableSendInEveryPacketMessageIdReceived = message.ReliabilityId;
 			} else {
 				//must discard.. got out of order message
