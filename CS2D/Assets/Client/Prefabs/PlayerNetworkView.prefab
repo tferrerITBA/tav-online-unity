@@ -19,9 +19,9 @@ GameObject:
   serializedVersion: 5
   m_Component:
   - component: {fileID: 4449799737012718}
-  - component: {fileID: 114012844536830778}
+  - component: {fileID: 114996052748473782}
   m_Layer: 0
-  m_Name: PlayerServer
+  m_Name: PlayerNetworkView
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -194,7 +194,7 @@ BoxCollider:
   serializedVersion: 2
   m_Size: {x: 1, y: 1, z: 1}
   m_Center: {x: 0, y: 0, z: 0}
---- !u!114 &114012844536830778
+--- !u!114 &114996052748473782
 MonoBehaviour:
   m_ObjectHideFlags: 1
   m_PrefabParentObject: {fileID: 0}
@@ -202,12 +202,9 @@ MonoBehaviour:
   m_GameObject: {fileID: 1394931143170682}
   m_Enabled: 1
   m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: 13f131e0a3cef487c98d78600ea1a1f0, type: 3}
+  m_Script: {fileID: 11500000, guid: 27ff06838e93441d3ad00ec600f5a62e, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  maxSpeed: 10
-  showVisualRepresentation: 1
-  visualRepresentationGO: {fileID: 1795382931138354}
 --- !u!136 &136755031382766274
 CapsuleCollider:
   m_ObjectHideFlags: 1

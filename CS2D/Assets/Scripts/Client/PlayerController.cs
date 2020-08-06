@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class PlayerController : MonoBehaviour {
 
-	PlayerInput playerInput;
+	PlayerInput playerInput = new PlayerInput();
 
 	// Use this for initialization
 	void Start () {
@@ -13,8 +13,16 @@ public class PlayerController : MonoBehaviour {
 	
 	// Update is called once per frame
 	void Update () {
-		if (Input.GetKey (KeyCode.W)) {
-			
+		playerInput.up = UnityEngine.Input.GetKey (KeyCode.W);
+		playerInput.down = UnityEngine.Input.GetKey (KeyCode.S);
+		playerInput.left = UnityEngine.Input.GetKey (KeyCode.A);
+		playerInput.right = UnityEngine.Input.GetKey (KeyCode.D);
+		playerInput.shoot = UnityEngine.Input.GetKey (KeyCode.Space);
+	}
+
+	public PlayerInput Input {
+		get {
+			return playerInput;
 		}
 	}
 }

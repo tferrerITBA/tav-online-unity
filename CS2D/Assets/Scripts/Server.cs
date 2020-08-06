@@ -138,6 +138,15 @@ public class Server : MonoBehaviour {
 			PlayerConnectedMessage playerConnectedMessage = PlayerConnectedMessage.CreatePlayerConnectedMessageToSend (playerToSendTo, playerId);
 			playerToSendTo.CommunicationManager.SendMessage (playerConnectedMessage);
 		}
+
+		//send connecting player a message that the other players have connected so it can create the entity
+		for (int i = 0; i < players.Count; i++) {
+			Player playerAlreadyConnected = players [i];
+			if (playerAlreadyConnected != player) {
+				PlayerConnectedMessage playerConnectedMessage = PlayerConnectedMessage.CreatePlayerConnectedMessageToSend (playerAlreadyConnected, playerAlreadyConnected.Id);
+				player.CommunicationManager.SendMessage (playerConnectedMessage);
+			}
+		}
 	}	
 
 	void ProcessDisconnectPlayer(DisconnectPlayerMessage disconnectPlayerMessage) {

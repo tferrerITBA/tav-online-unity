@@ -277,7 +277,7 @@ public class BitBuffer {
 		}
 	}
 
-	public void Flip() {
+	public void Flush() {
 		if (currentBitCount > 0) {
 			int word = (int) bits;
 			byte a = (byte) (word);

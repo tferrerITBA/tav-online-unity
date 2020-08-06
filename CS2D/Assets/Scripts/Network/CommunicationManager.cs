@@ -69,6 +69,7 @@ public class CommunicationManager {
 			//send to the sender that its reliable message has been received
 			SendMessage (AckReliableMessage.CreateAckReliableMessageMessageToSend (message.ReliabilityId));
 		} else if (message.Reliability == ReliabilityType.RELIABLE_SEND_EVERY_PACKET) {
+			//TODO: optimize this. if outMessages already contains an ack with id less than this one then it should be removed
 			SendMessage (AckReliableSendEveryFrameMessage.CreateAckReliableSendEveryFrameMessageMessageToSend (message.ReliabilityId));
 			if (message.ReliabilityId > LastReliableSendInEveryPacketMessageIdReceived) {	
 				//accept it... valid message since its +1 since the last received
@@ -147,7 +148,7 @@ public class CommunicationManager {
 				}
 			}
 
-			outPacket.buffer.Flip ();
+			outPacket.buffer.Flush ();
 			return outPacket;
 		} else {
 			return null;

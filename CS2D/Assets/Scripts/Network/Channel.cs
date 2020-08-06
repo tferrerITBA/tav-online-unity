@@ -17,7 +17,7 @@ public class Channel {
 	public Channel(string ip, int receivePort, int sendPort) {
 		try {
 			udpClient = new UdpClient(receivePort);
-			if (ip != null) {				
+			if (ip != null) {
 				udpClient.Connect(new IPEndPoint(IPAddress.Parse(ip), sendPort));
 			}
 			Thread receiveThread = new Thread(Receive);
@@ -26,6 +26,16 @@ public class Channel {
 			Debug.Log("could not connect socket: " + e.Message);
 		}
 	}
+
+    public Channel(int port) {
+        try {
+            udpClient = new UdpClient(port);
+            Thread receiveThread = new Thread(Receive);
+            receiveThread.Start();
+        } catch (Exception e) {
+            Debug.Log("could not connect socket: " + e.Message);
+        }
+    }
 
 	public void Disconnect() {
 		if (udpClient != null) {

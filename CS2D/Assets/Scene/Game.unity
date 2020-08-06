@@ -282,6 +282,9 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   serverPort: 9000
   clientPort: 9001
+  fakeDelay: 0
+  fakePacketLoss: 0
+  snapshotSendRate: 10
   playerPrefab: {fileID: 1394931143170682, guid: f11c8388590024aca96c2ec53291845e,
     type: 2}
 --- !u!4 &245635769
@@ -1905,10 +1908,12 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 035e4ffd05f2f4f998b28edac3576dcd, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  serverIp: 127.0.0.1
+  serverIp: 10.17.66.72
   serverPort: 9000
   clientPort: 9001
   playerId: 10000
+  playerPrefab: {fileID: 1394931143170682, guid: 62fc8db9195274dc1a6a75696be25677,
+    type: 2}
 --- !u!4 &1828081607
 Transform:
   m_ObjectHideFlags: 0
