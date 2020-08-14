@@ -16,20 +16,24 @@ public class SimulationTest : MonoBehaviour
     private float sendRate;
     
     private float accum = 0;
+    private float serverTime = 0;
     private int seq = 0; // Next snapshot to send
 
+    private bool clientPlaying = false;
     public int interpolationCount = 3;
     private float accumCli = 0;
     private int networkSeq = 0;
     private int displaySeq = 0; // Wait for buffer to fill before changing
+    private Snapshot currentSnapshot;
+    private float clientTime = 0;
 
-    private SortedList<int, Snapshot> interpolationBuffer;
+    private List<Snapshot> interpolationBuffer;
 
     // Start is called before the first frame update
     void Start() {
         channel = new Channel(9000);
         sendRate = 1f / pps;
-        interpolationBuffer = new SortedList<int, Snapshot>();
+        interpolationBuffer = new List<Snapshot>();
     }
 
     private void OnDestroy() {
@@ -46,12 +50,13 @@ public class SimulationTest : MonoBehaviour
         UpdateClient();
 
         accum += Time.deltaTime;
-        //Debug.Log("SERV " + accum + " " + sendRate);
+        serverTime += Time.deltaTime;
+        
         if (accum >= sendRate)
         {
             //serialize
             var packet = Packet.Obtain();
-            CubeEntity.Serialize(cubeRigidBody, packet.buffer, seq);
+            CubeEntity.Serialize(cubeRigidBody, packet.buffer, seq, serverTime);
             packet.buffer.Flush();
 
             string serverIP = "127.0.0.1";
@@ -74,41 +79,57 @@ public class SimulationTest : MonoBehaviour
 
             //deserialize
             CubeEntity.Deserialize(interpolationBuffer, buffer, displaySeq);
-            //Debug.Log("Packet Received: " + interpolationBuffer.Count);
             networkSeq++;
         }
+
+        if (interpolationBuffer.Count >= interpolationCount)
+            clientPlaying = true;
+        else if (interpolationBuffer.Count <= 1)
+            clientPlaying = false;
         
-        accumCli += Time.deltaTime;
-        //Debug.Log(accumCli + " " + sendRate);
-        //Debug.Log("CLI " + accumCli + " " + sendRate + " " + interpolationBuffer.Count);
-        if (accumCli >= sendRate && networkSeq >= interpolationCount)
+        if (clientPlaying)
         {
-            try
-            {
-                Snapshot snap = interpolationBuffer[displaySeq];
-                //Debug.Log(snap);
-                //Debug.Log(interpolationBuffer.Count + " " + seqCli + " " + snap.Seq + " " + snap.Position);
-                //Debug.Log(accumCli);
+            accumCli += Time.deltaTime;
+            clientTime += Time.deltaTime;
+            var previousTime = interpolationBuffer[0].Time;
+            var nextTime = interpolationBuffer[1].Time;
+            if (clientTime >= nextTime) {
                 interpolationBuffer.RemoveAt(0);
-                //Debug.Log("SUCC " + interpolationBuffer.Count);
-                clientCubeTransform.position = snap.Position;
-                clientCubeTransform.rotation = snap.Rotation;
+                previousTime = interpolationBuffer[0].Time;
+                nextTime =  interpolationBuffer[1].Time;
                 displaySeq++;
+                //accumCli -= sendRate;
             }
-            catch (KeyNotFoundException e)
-            {
-                // no lo tengo, interpolar
-                //Debug.Log("CATCH");
-                // Aumentar seq (no siempre)
-            }
-            
-            accumCli -= sendRate;
-            
+            var t =  (clientTime - previousTime) / (nextTime - previousTime);
+            Interpolate(interpolationBuffer[0], interpolationBuffer[1], t);
         }
-        else
-        {
-            //Debug.Log(accumCli);
-            
-        }
+        //else
+        //{
+            //Interpolate(interpolationBuffer[0], interpolationBuffer[1], t);
+        //}
+    }
+
+    private void Interpolate(Snapshot prevSnapshot, Snapshot nextSnapshot, float t)
+    {
+        //Debug.Log(prevSnapshot + " " + nextSnapshot);
+        var position = new Vector3();
+        var rotation = new Quaternion();
+
+        position.x = InterpolateAxis(prevSnapshot.Position.x, nextSnapshot.Position.x, t);
+        position.y = InterpolateAxis(prevSnapshot.Position.y, nextSnapshot.Position.y, t);
+        position.z = InterpolateAxis(prevSnapshot.Position.z, nextSnapshot.Position.z, t);
+        
+        rotation.w = InterpolateAxis(prevSnapshot.Rotation.w, nextSnapshot.Rotation.w, t);
+        rotation.x = InterpolateAxis(prevSnapshot.Rotation.x, nextSnapshot.Rotation.x, t);
+        rotation.y = InterpolateAxis(prevSnapshot.Rotation.y, nextSnapshot.Rotation.y, t);
+        rotation.z = InterpolateAxis(prevSnapshot.Rotation.z, nextSnapshot.Rotation.z, t);
+        
+        clientCubeTransform.position = position;
+        clientCubeTransform.rotation = rotation;
+    }
+
+    private float InterpolateAxis(float currentSnapValue, float nextSnapValue, float t)
+    {
+        return currentSnapValue + (nextSnapValue - currentSnapValue) * t;
     }
 }

@@ -4,11 +4,12 @@ using UnityEngine;
 
 public class CubeEntity
 {
-    public static void Serialize(Rigidbody rigidBody, BitBuffer buffer, int seq) {
+    public static void Serialize(Rigidbody rigidBody, BitBuffer buffer, int seq, float time) {
         var transform = rigidBody.transform;
         var position = transform.position;
         var rotation = transform.rotation;
         buffer.PutInt(seq);
+        buffer.PutFloat(time);
         buffer.PutFloat(position.x);
         buffer.PutFloat(position.y);
         buffer.PutFloat(position.z);
@@ -18,11 +19,12 @@ public class CubeEntity
         buffer.PutFloat(rotation.z);
     }
 
-    public static void Deserialize(SortedList<int, Snapshot> interpolationBuffer, BitBuffer buffer, int seqCli) {
+    public static void Deserialize(List<Snapshot> interpolationBuffer, BitBuffer buffer, int seqCli) {
         var position = new Vector3();
         var rotation = new Quaternion();
 
         var seq = buffer.GetInt();
+        var time = buffer.GetFloat();
         position.x = buffer.GetFloat();
         position.y = buffer.GetFloat();
         position.z = buffer.GetFloat();
@@ -30,11 +32,16 @@ public class CubeEntity
         rotation.x = buffer.GetFloat();
         rotation.y = buffer.GetFloat();
         rotation.z = buffer.GetFloat();
-        //Debug.Log("SEQ LEIDO: " + seq + " " + seqCli);
+        
         if (seq < seqCli) return;
         
-        Snapshot snapshot = new Snapshot(seq, position, rotation);
-        //Debug.Log(snapshot);
-        interpolationBuffer.Add(seq, snapshot);
+        Snapshot snapshot = new Snapshot(seq, time, position, rotation);
+        int i;
+        for (i = 0; i < interpolationBuffer.Count; i++)
+        {
+            if(interpolationBuffer[i].Seq > seq)
+                break;
+        }
+        interpolationBuffer.Insert(i, snapshot);
     }
 }
