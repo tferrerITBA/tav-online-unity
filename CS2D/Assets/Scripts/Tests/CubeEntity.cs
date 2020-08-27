@@ -4,10 +4,14 @@ using UnityEngine;
 
 public class CubeEntity
 {
-    public static void Serialize(Rigidbody rigidBody, BitBuffer buffer, int seq, float time) {
+    private const int ACK_MESSAGE = 0;
+    private const int UPDATE_MESSAGE = 1;
+    
+    public static void ServerWorldSerialize(Rigidbody rigidBody, BitBuffer buffer, int seq, float time) {
         var transform = rigidBody.transform;
         var position = transform.position;
         var rotation = transform.rotation;
+        buffer.PutByte(UPDATE_MESSAGE);
         buffer.PutInt(seq);
         buffer.PutFloat(time);
         buffer.PutFloat(position.x);
@@ -19,10 +23,34 @@ public class CubeEntity
         buffer.PutFloat(rotation.z);
     }
 
-    public static void Deserialize(List<Snapshot> interpolationBuffer, BitBuffer buffer, int seqCli) {
+    public static void ClientDeserialize(List<Snapshot> interpolationBuffer, BitBuffer buffer, int seqCli, List<List<int>> clientCommands) {
+        var messageType = buffer.GetByte();
+        
+        if (messageType == UPDATE_MESSAGE)
+        {
+            ClientDeserializeUpdate(interpolationBuffer, buffer, seqCli);
+        }
+        else if (messageType == ACK_MESSAGE)
+        {
+            int receivedAckSequence = ClientDeserializeAck(buffer);
+            int lastAckedCommandsIndex = 0;
+            foreach (var commands in clientCommands)
+            {
+                if (commands[0] > receivedAckSequence)
+                {
+                    break;
+                }
+                lastAckedCommandsIndex++;
+            }
+            clientCommands.RemoveRange(0, lastAckedCommandsIndex);
+        }
+    }
+
+    private static void ClientDeserializeUpdate(List<Snapshot> interpolationBuffer, BitBuffer buffer, int seqCli)
+    {
         var position = new Vector3();
         var rotation = new Quaternion();
-
+        
         var seq = buffer.GetInt();
         var time = buffer.GetFloat();
         position.x = buffer.GetFloat();
@@ -43,5 +71,48 @@ public class CubeEntity
                 break;
         }
         interpolationBuffer.Insert(i, snapshot);
+    }
+
+    public static void ClientSerializeInput(List<List<int>> clientCommands, BitBuffer buffer)
+    {
+        foreach (var commandList in clientCommands)
+        {
+            foreach (var command in commandList)
+            {
+                buffer.PutInt(command);
+            }
+        }
+    }
+
+    public static List<List<int>> ServerDeserializeInput(BitBuffer buffer)
+    {
+        List<List<int>> totalCommands = new List<List<int>>();
+        
+        while (buffer.HasRemaining())
+        {
+            List<int> commands = new List<int>();
+            
+            commands.Add(buffer.GetInt());
+            commands.Add(buffer.GetInt());
+            commands.Add(buffer.GetInt());
+            commands.Add(buffer.GetInt());
+            commands.Add(buffer.GetInt());
+            commands.Add(buffer.GetInt());
+            
+            totalCommands.Add(commands);
+        }
+
+        return totalCommands;
+    }
+
+    public static void ServerSerializeAck(BitBuffer buffer, int commandSequence)
+    {
+        buffer.PutByte(ACK_MESSAGE);
+        buffer.PutInt(commandSequence);
+    }
+    
+    private static int ClientDeserializeAck(BitBuffer buffer)
+    {
+        return buffer.GetInt();
     }
 }

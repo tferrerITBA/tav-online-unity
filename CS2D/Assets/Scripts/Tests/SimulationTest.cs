@@ -3,11 +3,13 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Net;
 using UnityEngine;
+using UnityEngine.PlayerLoop;
 
 public class SimulationTest : MonoBehaviour
 {
 
     private Channel channel;
+    private Channel clientChannel;
 
     [SerializeField] private Rigidbody cubeRigidBody;
     [SerializeField] private Transform clientCubeTransform;
@@ -21,19 +23,24 @@ public class SimulationTest : MonoBehaviour
 
     private bool clientPlaying = false;
     public int interpolationCount = 3;
-    private float accumCli = 0;
-    private int networkSeq = 0;
     private int displaySeq = 0; // Wait for buffer to fill before changing
     private Snapshot currentSnapshot;
     private float clientTime = 0;
 
     private List<Snapshot> interpolationBuffer;
 
+    private int commandSequence = 0;
+    private List<List<int>> clientCommands;
+
+    private bool connected = true;
+
     // Start is called before the first frame update
     void Start() {
         channel = new Channel(9000);
+        clientChannel = new Channel(9001);
         sendRate = 1f / pps;
         interpolationBuffer = new List<Snapshot>();
+        clientCommands = new List<List<int>>();
     }
 
     private void OnDestroy() {
@@ -42,21 +49,54 @@ public class SimulationTest : MonoBehaviour
 
     // Update is called once per frame
     void Update() {
-        //apply input
-        if (Input.GetKeyDown(KeyCode.Space)) {
-            cubeRigidBody.AddForceAtPosition(Vector3.up * 5, Vector3.zero, ForceMode.Impulse);
+        if (Input.GetKeyDown(KeyCode.D))
+        {
+            connected = !connected;
         }
 
-        UpdateClient();
-
         accum += Time.deltaTime;
+
+        if (connected)
+        {
+            UpdateServer();
+        }
+        
+        UpdateClient();
+        
+    }
+
+    private void UpdateServer()
+    {
         serverTime += Time.deltaTime;
         
+        var commandPacket = clientChannel.GetPacket();
+        if (commandPacket != null) {
+            var buffer = commandPacket.buffer;
+
+            List<List<int>> commandsList = CubeEntity.ServerDeserializeInput(buffer);
+            var packet = Packet.Obtain();
+            int receivedCommandSequence = -1;
+            foreach (var commands in commandsList)
+            {
+                receivedCommandSequence = commands[0];
+                ExecuteClientInput(commands);
+            }
+            CubeEntity.ServerSerializeAck(packet.buffer, receivedCommandSequence);
+            packet.buffer.Flush();
+
+            string serverIP = "127.0.0.1";
+            int port = 9000;
+            var remoteEp = new IPEndPoint(IPAddress.Parse(serverIP), port);
+            channel.Send(packet, remoteEp);
+
+            packet.Free();
+        }
+
         if (accum >= sendRate)
         {
             //serialize
             var packet = Packet.Obtain();
-            CubeEntity.Serialize(cubeRigidBody, packet.buffer, seq, serverTime);
+            CubeEntity.ServerWorldSerialize(cubeRigidBody, packet.buffer, seq, serverTime);
             packet.buffer.Flush();
 
             string serverIP = "127.0.0.1";
@@ -78,9 +118,11 @@ public class SimulationTest : MonoBehaviour
             var buffer = packet.buffer;
 
             //deserialize
-            CubeEntity.Deserialize(interpolationBuffer, buffer, displaySeq);
-            networkSeq++;
+            CubeEntity.ClientDeserialize(interpolationBuffer, buffer, displaySeq, clientCommands);
+            //networkSeq++;
         }
+
+        ReadClientInput();
 
         if (interpolationBuffer.Count >= interpolationCount)
             clientPlaying = true;
@@ -89,7 +131,7 @@ public class SimulationTest : MonoBehaviour
         
         if (clientPlaying)
         {
-            accumCli += Time.deltaTime;
+            //accumCli += Time.deltaTime;
             clientTime += Time.deltaTime;
             var previousTime = interpolationBuffer[0].Time;
             var nextTime = interpolationBuffer[1].Time;
@@ -98,15 +140,59 @@ public class SimulationTest : MonoBehaviour
                 previousTime = interpolationBuffer[0].Time;
                 nextTime =  interpolationBuffer[1].Time;
                 displaySeq++;
-                //accumCli -= sendRate;
             }
             var t =  (clientTime - previousTime) / (nextTime - previousTime);
             Interpolate(interpolationBuffer[0], interpolationBuffer[1], t);
         }
-        //else
-        //{
-            //Interpolate(interpolationBuffer[0], interpolationBuffer[1], t);
-        //}
+    }
+
+    private void ExecuteClientInput(List<int> commands)
+    {
+        //apply input
+        if (commands[1] == 1) {
+            cubeRigidBody.AddForceAtPosition(Vector3.up * 5, Vector3.zero, ForceMode.Impulse);
+        }
+        if (commands[2] == 1) {
+            cubeRigidBody.AddForceAtPosition(Vector3.left * 5, Vector3.zero, ForceMode.Impulse);
+        }
+        if (commands[3] == 1) {
+            cubeRigidBody.AddForceAtPosition(Vector3.right * 5, Vector3.zero, ForceMode.Impulse);
+        }
+        if (commands[4] == 1) {
+            cubeRigidBody.AddForceAtPosition(Vector3.forward * 5, Vector3.zero, ForceMode.Impulse);
+        }
+        if (commands[5] == 1) {
+            cubeRigidBody.AddForceAtPosition(Vector3.back * 5, Vector3.zero, ForceMode.Impulse);
+        }
+    }
+
+    private void ReadClientInput()
+    {
+        List<int> currentCommands = new List<int>();
+        currentCommands.Add(commandSequence);
+        currentCommands.Add(Input.GetKeyDown(KeyCode.Space)? 1 : 0);
+        currentCommands.Add(Input.GetKeyDown(KeyCode.LeftArrow)? 1 : 0);
+        currentCommands.Add(Input.GetKeyDown(KeyCode.RightArrow)? 1 : 0);
+        currentCommands.Add(Input.GetKeyDown(KeyCode.UpArrow)? 1 : 0);
+        currentCommands.Add(Input.GetKeyDown(KeyCode.DownArrow)? 1 : 0);
+
+        if (currentCommands.Exists(x => x == 1))
+        {
+            clientCommands.Add(currentCommands);
+            //serialize
+            var packet = Packet.Obtain();
+            CubeEntity.ClientSerializeInput(clientCommands, packet.buffer);
+            packet.buffer.Flush();
+
+            string serverIP = "127.0.0.1";
+            int port = 9001;
+            var remoteEp = new IPEndPoint(IPAddress.Parse(serverIP), port);
+            channel.Send(packet, remoteEp);
+
+            packet.Free();
+            
+            commandSequence++;
+        }
     }
 
     private void Interpolate(Snapshot prevSnapshot, Snapshot nextSnapshot, float t)
