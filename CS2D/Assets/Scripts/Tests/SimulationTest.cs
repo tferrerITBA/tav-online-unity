@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
+using Tests;
 using UnityEngine;
 using UnityEngine.PlayerLoop;
 
@@ -29,8 +31,7 @@ public class SimulationTest : MonoBehaviour
 
     private List<Snapshot> interpolationBuffer;
 
-    private int commandSequence = 0;
-    private List<List<int>> clientCommands;
+    private List<Commands> clientCommands = new List<Commands>();
 
     private bool connected = true;
 
@@ -40,7 +41,6 @@ public class SimulationTest : MonoBehaviour
         clientChannel = new Channel(9001);
         sendRate = 1f / pps;
         interpolationBuffer = new List<Snapshot>();
-        clientCommands = new List<List<int>>();
     }
 
     private void OnDestroy() {
@@ -73,12 +73,12 @@ public class SimulationTest : MonoBehaviour
         if (commandPacket != null) {
             var buffer = commandPacket.buffer;
 
-            List<List<int>> commandsList = CubeEntity.ServerDeserializeInput(buffer);
+            List<Commands> commandsList = CubeEntity.ServerDeserializeInput(buffer);
             var packet = Packet.Obtain();
             int receivedCommandSequence = -1;
-            foreach (var commands in commandsList)
+            foreach (Commands commands in commandsList)
             {
-                receivedCommandSequence = commands[0];
+                receivedCommandSequence = commands.Seq;
                 ExecuteClientInput(commands);
             }
             CubeEntity.ServerSerializeAck(packet.buffer, receivedCommandSequence);
@@ -146,37 +146,37 @@ public class SimulationTest : MonoBehaviour
         }
     }
 
-    private void ExecuteClientInput(List<int> commands)
+    private void ExecuteClientInput(Commands commands)
     {
         //apply input
-        if (commands[1] == 1) {
+        if (commands.Space) {
             cubeRigidBody.AddForceAtPosition(Vector3.up * 5, Vector3.zero, ForceMode.Impulse);
         }
-        if (commands[2] == 1) {
+        if (commands.Left) {
             cubeRigidBody.AddForceAtPosition(Vector3.left * 5, Vector3.zero, ForceMode.Impulse);
         }
-        if (commands[3] == 1) {
+        if (commands.Right) {
             cubeRigidBody.AddForceAtPosition(Vector3.right * 5, Vector3.zero, ForceMode.Impulse);
         }
-        if (commands[4] == 1) {
+        if (commands.Up) {
             cubeRigidBody.AddForceAtPosition(Vector3.forward * 5, Vector3.zero, ForceMode.Impulse);
         }
-        if (commands[5] == 1) {
+        if (commands.Down) {
             cubeRigidBody.AddForceAtPosition(Vector3.back * 5, Vector3.zero, ForceMode.Impulse);
         }
     }
 
     private void ReadClientInput()
     {
-        List<int> currentCommands = new List<int>();
-        currentCommands.Add(commandSequence);
-        currentCommands.Add(Input.GetKeyDown(KeyCode.Space)? 1 : 0);
-        currentCommands.Add(Input.GetKeyDown(KeyCode.LeftArrow)? 1 : 0);
-        currentCommands.Add(Input.GetKeyDown(KeyCode.RightArrow)? 1 : 0);
-        currentCommands.Add(Input.GetKeyDown(KeyCode.UpArrow)? 1 : 0);
-        currentCommands.Add(Input.GetKeyDown(KeyCode.DownArrow)? 1 : 0);
-
-        if (currentCommands.Exists(x => x == 1))
+        Commands currentCommands = new Commands(
+            Input.GetKeyDown(KeyCode.UpArrow),
+            Input.GetKeyDown(KeyCode.DownArrow),
+            Input.GetKeyDown(KeyCode.RightArrow),
+            Input.GetKeyDown(KeyCode.LeftArrow),
+            Input.GetKeyDown(KeyCode.Space)
+            );
+        
+        if (currentCommands.hasCommand())
         {
             clientCommands.Add(currentCommands);
             //serialize
@@ -190,8 +190,6 @@ public class SimulationTest : MonoBehaviour
             channel.Send(packet, remoteEp);
 
             packet.Free();
-            
-            commandSequence++;
         }
     }
 

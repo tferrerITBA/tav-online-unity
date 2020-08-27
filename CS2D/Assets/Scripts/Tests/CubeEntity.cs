@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using Tests;
 using UnityEngine;
 
 public class CubeEntity
@@ -23,7 +24,7 @@ public class CubeEntity
         buffer.PutFloat(rotation.z);
     }
 
-    public static void ClientDeserialize(List<Snapshot> interpolationBuffer, BitBuffer buffer, int seqCli, List<List<int>> clientCommands) {
+    public static void ClientDeserialize(List<Snapshot> interpolationBuffer, BitBuffer buffer, int seqCli, List<Commands> clientCommands) {
         var messageType = buffer.GetByte();
         
         if (messageType == UPDATE_MESSAGE)
@@ -36,7 +37,7 @@ public class CubeEntity
             int lastAckedCommandsIndex = 0;
             foreach (var commands in clientCommands)
             {
-                if (commands[0] > receivedAckSequence)
+                if (commands.Seq > receivedAckSequence)
                 {
                     break;
                 }
@@ -73,32 +74,35 @@ public class CubeEntity
         interpolationBuffer.Insert(i, snapshot);
     }
 
-    public static void ClientSerializeInput(List<List<int>> clientCommands, BitBuffer buffer)
+    public static void ClientSerializeInput(List<Commands> clientCommands, BitBuffer buffer)
     {
-        foreach (var commandList in clientCommands)
+        foreach (Commands commands in clientCommands)
         {
-            foreach (var command in commandList)
-            {
-                buffer.PutInt(command);
-            }
+            buffer.PutInt(commands.Seq);
+            buffer.PutInt(commands.Up ? 1 : 0);
+            buffer.PutInt(commands.Down ? 1 : 0);
+            buffer.PutInt(commands.Right ? 1 : 0);
+            buffer.PutInt(commands.Left ? 1 : 0);
+            buffer.PutInt(commands.Space ? 1 : 0);
         }
     }
 
-    public static List<List<int>> ServerDeserializeInput(BitBuffer buffer)
+    public static List<Commands> ServerDeserializeInput(BitBuffer buffer)
     {
-        List<List<int>> totalCommands = new List<List<int>>();
+        List<Commands> totalCommands = new List<Commands>();
         
         while (buffer.HasRemaining())
         {
-            List<int> commands = new List<int>();
-            
-            commands.Add(buffer.GetInt());
-            commands.Add(buffer.GetInt());
-            commands.Add(buffer.GetInt());
-            commands.Add(buffer.GetInt());
-            commands.Add(buffer.GetInt());
-            commands.Add(buffer.GetInt());
-            
+            int seq = buffer.GetInt();
+
+            Commands commands = new Commands(
+                seq,
+                buffer.GetInt() > 0,
+                buffer.GetInt() > 0,
+                buffer.GetInt() > 0,
+                buffer.GetInt() > 0,
+                buffer.GetInt() > 0);
+
             totalCommands.Add(commands);
         }
 
