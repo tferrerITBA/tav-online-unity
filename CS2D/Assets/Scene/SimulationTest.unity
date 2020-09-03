@@ -247,7 +247,7 @@ MonoBehaviour:
   cubeRigidBody: {fileID: 1277577281}
   clientCubeTransform: {fileID: 1804424181}
   pps: 60
-  interpolationCount: 3
+  interpolationCount: 2
 --- !u!4 &803758058
 Transform:
   m_ObjectHideFlags: 0
