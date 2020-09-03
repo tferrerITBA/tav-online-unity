@@ -60,9 +60,9 @@ public class SimulationTest : MonoBehaviour
         {
             UpdateServer();
         }
-        
+
+
         UpdateClient();
-        
     }
 
     private void UpdateServer()
@@ -137,9 +137,14 @@ public class SimulationTest : MonoBehaviour
             var nextTime = interpolationBuffer[1].Time;
             if (clientTime >= nextTime) {
                 interpolationBuffer.RemoveAt(0);
+                displaySeq++;
+                if (interpolationBuffer.Count < 2)
+                {
+                    clientPlaying = false;
+                    return;
+                }
                 previousTime = interpolationBuffer[0].Time;
                 nextTime =  interpolationBuffer[1].Time;
-                displaySeq++;
             }
             var t =  (clientTime - previousTime) / (nextTime - previousTime);
             Interpolate(interpolationBuffer[0], interpolationBuffer[1], t);
