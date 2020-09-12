@@ -11,12 +11,7 @@ using Random = System.Random;
 
 public class SimulationTest : MonoBehaviour
 {
-
-    public GameObject clientPrefab;
-
-    [SerializeField] private Rigidbody cubeRigidBody;
-
-    [SerializeField] private Dictionary<int, CubeClient> cubeClients = new Dictionary<int, CubeClient>();
+    [SerializeField] private Dictionary<int, Rigidbody> serverCubes = new Dictionary<int, Rigidbody>();
 
     public const int PortsPerClient = 2;
     public int sendBasePort = 9000;
@@ -30,8 +25,10 @@ public class SimulationTest : MonoBehaviour
     private float serverTime = 0;
     private int seq = 0; // Next snapshot to send
     private bool serverConnected;
-    
-    public int interpolationCount = 2;
+
+    public Rigidbody cubePrefab;
+
+    public ClientManager clientManager;
 
     // Start is called before the first frame update
     void Start() {
@@ -40,21 +37,28 @@ public class SimulationTest : MonoBehaviour
 
     // Update is called once per frame
     void Update() {
-        if (Input.GetKeyDown(KeyCode.C))
-        {
-            int userID = new Random().Next();
-            GameObject userCube = Instantiate(clientPrefab);
-            CubeClient cubeClientComponent = userCube.GetComponent<CubeClient>();
-            cubeClientComponent.Initialize(recvBasePort + clientCount * PortsPerClient,
-                sendBasePort + clientCount * PortsPerClient, userID, interpolationCount);
-            clientCount++;
-        }
         if (Input.GetKeyDown(KeyCode.D))
         {
             serverConnected = !serverConnected;
         }
 
         accum += Time.deltaTime;
+
+        var packet = clientManager.playerJoinSendChannel.GetPacket();
+        if (packet != null)
+        {
+            int userID = CubeEntity.PlayerConnectDeserialize(packet.buffer);
+            
+            Rigidbody newCube = Instantiate(cubePrefab); // instantiate server cube (gray)
+            serverCubes.Add(userID, newCube);
+            var playerJoined = Packet.Obtain();
+            CubeEntity.PlayerJoinedSerialize(playerJoined.buffer, userID, serverCubes.Count,
+                sendBasePort + clientCount, recvBasePort + clientCount);
+
+            clientCount++;
+            
+            packet.Free();
+        }
 
         if (serverConnected)
         {
@@ -66,7 +70,7 @@ public class SimulationTest : MonoBehaviour
     {
         serverTime += Time.deltaTime;
 
-        foreach (var cubeClientPair in cubeClients)
+        foreach (var cubeClientPair in clientManager.cubeClients)
         {
             int userID = cubeClientPair.Key;
             CubeClient cubeClient = cubeClientPair.Value;
@@ -97,7 +101,7 @@ public class SimulationTest : MonoBehaviour
             {
                 //serialize
                 var packet = Packet.Obtain();
-                CubeEntity.ServerWorldSerialize(cubeRigidBody, packet.buffer, seq, serverTime);
+                CubeEntity.ServerWorldSerialize(serverCubes, packet.buffer, seq, serverTime);
                 packet.buffer.Flush();
 
                 string serverIP = "127.0.0.1";
@@ -114,6 +118,7 @@ public class SimulationTest : MonoBehaviour
     
     private void ExecuteClientInput(Commands commands)
     {
+        Rigidbody cubeRigidBody = serverCubes[commands.UserID];
         //apply input
         if (commands.Space) {
             cubeRigidBody.AddForceAtPosition(Vector3.up * 5, Vector3.zero, ForceMode.Impulse);

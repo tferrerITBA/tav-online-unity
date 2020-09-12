@@ -5,6 +5,7 @@ namespace Tests
     public class Commands
     {
         private static int _seq = 0;
+        private int userID;
         private int seq;
         private bool up;
         private bool down;
@@ -12,8 +13,9 @@ namespace Tests
         private bool left;
         private bool space;
 
-        public Commands(bool up, bool down, bool right, bool left, bool space)
+        public Commands(int userID, bool up, bool down, bool right, bool left, bool space)
         {
+            this.userID = userID;
             this.seq = _seq;
             this.up = up;
             this.down = down;
@@ -29,9 +31,10 @@ namespace Tests
             return $"{nameof(Seq)}: {Seq}, {nameof(Up)}: {Up}, {nameof(Down)}: {Down}, {nameof(Right)}: {Right}, {nameof(Left)}: {Left}, {nameof(Space)}: {Space}";
         }
 
-        public Commands(int seq, bool up, bool down, bool right, bool left, bool space)
+        public Commands(int seq, int userID, bool up, bool down, bool right, bool left, bool space)
         {
             this.seq = seq;
+            this.userID = userID;
             this.up = up;
             this.down = down;
             this.right = right;
@@ -45,6 +48,8 @@ namespace Tests
         }
 
         public int Seq => seq;
+
+        public int UserID => userID;
         
         public bool Up => up;
 

@@ -17,8 +17,12 @@ public class CubeClient : MonoBehaviour
     public float time = 0;
     public bool isPlaying;
 
-    public List<Snapshot> interpolationBuffer = new List<Snapshot>();
-    public List<Commands> commands = new List<Commands>();
+    private List<Snapshot> interpolationBuffer = new List<Snapshot>();
+    private List<Commands> commands = new List<Commands>();
+    private Dictionary<int, CubeClient> cubes = new Dictionary<int, CubeClient>();
+
+    public GameObject cubePrefab;
+    
     public int minBufferElems;
 
     public void Initialize(int sendPort, int recvPort, int userID, int minBufferElems)
@@ -75,6 +79,7 @@ public class CubeClient : MonoBehaviour
     private void ReadClientInput()
     {
         Commands currentCommands = new Commands(
+            userID,
             Input.GetKeyDown(KeyCode.UpArrow),
             Input.GetKeyDown(KeyCode.DownArrow),
             Input.GetKeyDown(KeyCode.RightArrow),
