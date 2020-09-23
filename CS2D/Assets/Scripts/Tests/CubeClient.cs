@@ -23,16 +23,15 @@ public class CubeClient : MonoBehaviour
 
     public GameObject cubePrefab;
     
-    public int minBufferElems;
+    public int interpolationCount = 2;
 
-    public void Initialize(int sendPort, int recvPort, int userID, int minBufferElems)
+    public void Initialize(int sendPort, int recvPort, int userID)
     {
         this.sendPort = sendPort;
         this.sendChannel = new Channel(sendPort);
         this.recvPort = recvPort;
         this.recvChannel = new Channel(recvPort);
         this.userID = userID;
-        this.minBufferElems = minBufferElems;
     }
 
     private void Update()
@@ -49,7 +48,7 @@ public class CubeClient : MonoBehaviour
 
         ReadClientInput();
 
-        if (interpolationBuffer.Count >= minBufferElems)
+        if (interpolationBuffer.Count >= interpolationCount)
             isPlaying = true;
         else if (interpolationBuffer.Count <= 1)
             isPlaying = false;

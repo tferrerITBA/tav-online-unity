@@ -9,10 +9,11 @@ public class ClientManager : MonoBehaviour
 
     public int playerJoinRecvPort;
     public Channel playerJoinRecvChannel;
-    
-    public CubeClient clientPrefab;
+
     public Dictionary<int, CubeClient> cubeClients = new Dictionary<int, CubeClient>();
-    
+
+    public Dictionary<int, CubeClient> CubeClients => cubeClients;
+
     public int interpolationCount = 2;
     
     // Start is called before the first frame update
@@ -30,24 +31,13 @@ public class ClientManager : MonoBehaviour
             int userID = Random.Range(0, 8096);
             var packet = Packet.Obtain();
             CubeEntity.PlayerConnectSerialize(packet.buffer, userID);
+            packet.buffer.Flush();
             
             string serverIP = "127.0.0.1";
             var remoteEp = new IPEndPoint(IPAddress.Parse(serverIP), playerJoinSendPort);
             playerJoinSendChannel.Send(packet, remoteEp);
             
             packet.Free();
-        }
-
-        var newConnectionPacket = playerJoinRecvChannel.GetPacket();
-        if (newConnectionPacket != null)
-        {
-            var buffer = newConnectionPacket.buffer; // playerJoined
-            int[] userData = CubeEntity.PlayerJoinedDeserialize(buffer);
-            CubeClient cubeClientComponent = Instantiate(clientPrefab);
-            cubeClients.Add(userData[0], cubeClientComponent);
-            
-            cubeClientComponent.Initialize(userData[2], userData[3], 
-                userData[0], interpolationCount);
         }
     }
 }

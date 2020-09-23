@@ -23,7 +23,7 @@ public class CubeEntity
         return buffer.GetInt();
     }
 
-    public static void PlayerJoinedSerialize(BitBuffer buffer, int userID, int playerCount, int sendPort, int recvPort)
+    public static void PlayerJoinedSerialize(BitBuffer buffer, int userID, int playerCount)// , int sendPort, int recvPort)
     {
         buffer.PutInt(PlayerJoined);
         buffer.PutInt(userID);
@@ -35,9 +35,9 @@ public class CubeEntity
         buffer.GetInt(); // PlayerJoined
         int userID = buffer.GetInt();
         int playerCount = buffer.GetInt();
-        int sendPort = buffer.GetInt();
-        int recvPort = buffer.GetInt();
-        return new int[] { userID, playerCount, sendPort, recvPort }; // userID, playerCount
+        // int sendPort = buffer.GetInt();
+        // int recvPort = buffer.GetInt();
+        return new int[] { userID, playerCount };// ), sendPort, recvPort }; // userID, playerCount
     }
     
     public static void ServerWorldSerialize(Dictionary<int, Rigidbody> rigidBodies, BitBuffer buffer, int seq, float time) {

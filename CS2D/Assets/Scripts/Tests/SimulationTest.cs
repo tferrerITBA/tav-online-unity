@@ -27,6 +27,7 @@ public class SimulationTest : MonoBehaviour
     private bool serverConnected;
 
     public Rigidbody cubePrefab;
+    public CubeClient clientPrefab;
 
     public ClientManager clientManager;
 
@@ -51,13 +52,24 @@ public class SimulationTest : MonoBehaviour
             
             Rigidbody newCube = Instantiate(cubePrefab); // instantiate server cube (gray)
             serverCubes.Add(userID, newCube);
-            var playerJoined = Packet.Obtain();
-            CubeEntity.PlayerJoinedSerialize(playerJoined.buffer, userID, serverCubes.Count,
-                sendBasePort + clientCount, recvBasePort + clientCount);
 
-            clientCount++;
+            foreach (var clientPair in clientManager.cubeClients)
+            {
+                var playerJoined = Packet.Obtain();
+                CubeEntity.PlayerJoinedSerialize(playerJoined.buffer, userID, serverCubes.Count);
+                playerJoined.buffer.Flush();
+                
+                Debug.Log(clientPair.Value.recvPort + " " + clientPair.Value.recvChannel);
+                string serverIP = "127.0.0.1";
+                var remoteEp = new IPEndPoint(IPAddress.Parse(serverIP), clientPair.Value.recvPort);
+                clientPair.Value.recvChannel.Send(playerJoined, remoteEp);
+
+                packet.Free();
+            }
             
-            packet.Free();
+            InstantiateClient(userID, sendBasePort + clientCount * PortsPerClient,
+                recvBasePort + clientCount * PortsPerClient);
+            clientCount++;
         }
 
         if (serverConnected)
@@ -135,5 +147,13 @@ public class SimulationTest : MonoBehaviour
         if (commands.Down) {
             cubeRigidBody.AddForceAtPosition(Vector3.back * 5, Vector3.zero, ForceMode.Impulse);
         }
+    }
+
+    private void InstantiateClient(int userID, int sendPort, int recvPort)
+    {
+        CubeClient cubeClientComponent = Instantiate(clientPrefab);
+        clientManager.CubeClients.Add(userID, cubeClientComponent);
+            
+        cubeClientComponent.Initialize(sendPort, recvPort, userID);
     }
 }
