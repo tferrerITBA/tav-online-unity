@@ -30,27 +30,27 @@ public class CubeEntity
         buffer.PutInt(playerCount);
     }
 
-    public static int[] PlayerJoinedDeserialize(BitBuffer buffer)
+    public static void PlayerJoinedDeserialize(int[] playerJoined, BitBuffer buffer)
     {
         buffer.GetInt(); // PlayerJoined
-        int userID = buffer.GetInt();
-        int playerCount = buffer.GetInt();
-        // int sendPort = buffer.GetInt();
-        // int recvPort = buffer.GetInt();
-        return new int[] { userID, playerCount };// ), sendPort, recvPort }; // userID, playerCount
+        playerJoined[0] = buffer.GetInt(); // userID
+        playerJoined[1] = buffer.GetInt(); // playerCount
     }
     
     public static void ServerWorldSerialize(Dictionary<int, Rigidbody> rigidBodies, BitBuffer buffer, int seq, float time) {
+        
+        buffer.PutByte(UpdateMessage);
+        buffer.PutInt(seq);
+        buffer.PutFloat(time);
+        buffer.PutInt(rigidBodies.Count);
+        
         foreach (var userRigidBodyPair in rigidBodies)
         {
-            var rigidBody = userRigidBodyPair.Value;
-            var transform = rigidBody.transform;
+            var transform = userRigidBodyPair.Value.transform;
             var position = transform.position;
             var rotation = transform.rotation;
-            buffer.PutByte(UpdateMessage);
-            buffer.PutInt(seq);
+            
             buffer.PutInt(userRigidBodyPair.Key);
-            buffer.PutFloat(time);
             buffer.PutFloat(position.x);
             buffer.PutFloat(position.y);
             buffer.PutFloat(position.z);
@@ -61,12 +61,16 @@ public class CubeEntity
         }
     }
 
-    public static void ClientDeserialize(List<Snapshot> interpolationBuffer, BitBuffer buffer, int seqCli, List<Commands> clientCommands) {
+    public static void ClientDeserialize(List<Snapshot> interpolationBuffer, int[] playerJoined, BitBuffer buffer, int seqCli, List<Commands> clientCommands) {
         var messageType = buffer.GetByte();
         
         if (messageType == UpdateMessage)
         {
             ClientDeserializeUpdate(interpolationBuffer, buffer, seqCli);
+        }
+        else if (messageType == PlayerJoined)
+        {
+            PlayerJoinedDeserialize(playerJoined, buffer);
         }
         else if (messageType == CommandsAckMessage)
         {
@@ -86,24 +90,32 @@ public class CubeEntity
 
     private static void ClientDeserializeUpdate(List<Snapshot> interpolationBuffer, BitBuffer buffer, int seqCli)
     {
-        var position = new Vector3();
-        var rotation = new Quaternion();
-        
         var seq = buffer.GetInt();
-        var userID = buffer.GetInt();
         var time = buffer.GetFloat();
-        position.x = buffer.GetFloat();
-        position.y = buffer.GetFloat();
-        position.z = buffer.GetFloat();
-        rotation.w = buffer.GetFloat();
-        rotation.x = buffer.GetFloat();
-        rotation.y = buffer.GetFloat();
-        rotation.z = buffer.GetFloat();
+        var playerCount = buffer.GetInt();
+
+        Dictionary<int, UserState> userStates = new Dictionary<int, UserState>();
+        int i;
+        for (i = 0; i < playerCount; i++)
+        {
+            var position = new Vector3();
+            var rotation = new Quaternion();
+
+            var userID = buffer.GetInt();
+            position.x = buffer.GetFloat();
+            position.y = buffer.GetFloat();
+            position.z = buffer.GetFloat();
+            rotation.w = buffer.GetFloat();
+            rotation.x = buffer.GetFloat();
+            rotation.y = buffer.GetFloat();
+            rotation.z = buffer.GetFloat();
+            
+            userStates.Add(userID, new UserState(position, rotation));
+        }
         
         if (seq < seqCli) return;
-        
-        Snapshot snapshot = new Snapshot(seq, time, position, rotation);
-        int i;
+
+        Snapshot snapshot = new Snapshot(seq, time, userStates);
         for (i = 0; i < interpolationBuffer.Count; i++)
         {
             if(interpolationBuffer[i].Seq > seq)

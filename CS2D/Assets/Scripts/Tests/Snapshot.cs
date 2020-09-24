@@ -1,19 +1,20 @@
 ﻿using System;
-using UnityEngine;
+using System.Collections.Generic;
+using System.Numerics;
+using Quaternion = UnityEngine.Quaternion;
+using Vector3 = UnityEngine.Vector3;
 
 public class Snapshot : IComparable<Snapshot>
 {
     private int seq;
     private float time;
-    private Vector3 position;
-    private Quaternion rotation;
+    private Dictionary<int, UserState> userStates;
 
-    public Snapshot(int seq, float time, Vector3 position, Quaternion rotation)
+    public Snapshot(int seq, float time, Dictionary<int, UserState> userStates)
     {
         this.seq = seq;
         this.time = time;
-        this.position = position;
-        this.rotation = rotation;
+        this.userStates = userStates;
     }
 
     public int CompareTo(Snapshot other)
@@ -25,12 +26,17 @@ public class Snapshot : IComparable<Snapshot>
 
     public float Time => time;
 
-    public Vector3 Position => position;
-
-    public Quaternion Rotation => rotation;
+    public Dictionary<int, UserState> UserStates => userStates;
 
     public override string ToString()
     {
-        return $"Seq: {seq}, Time: {time}, Position: {position}, Rotation: {rotation}";
+        var playerCount = userStates.Count;
+        var str = $"Seq: {seq}, Time: {time}, Players: {playerCount}\n";
+        foreach (var userStatePair in userStates)
+        {
+            str += $"\tPlayer: {userStatePair.Key} Position: {userStatePair.Value.Position} " +
+                   $"Rotation: {userStatePair.Value.Position}\n";
+        }
+        return str;
     }
 }

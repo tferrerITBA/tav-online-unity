@@ -19,9 +19,11 @@ public class CubeClient : MonoBehaviour
 
     private List<Snapshot> interpolationBuffer = new List<Snapshot>();
     private List<Commands> commands = new List<Commands>();
-    private Dictionary<int, CubeClient> cubes = new Dictionary<int, CubeClient>();
+    private Dictionary<int, GameObject> cubes = new Dictionary<int, GameObject>();
 
     public GameObject cubePrefab;
+
+    public int clientColor;
     
     public int interpolationCount = 2;
 
@@ -32,17 +34,20 @@ public class CubeClient : MonoBehaviour
         this.recvPort = recvPort;
         this.recvChannel = new Channel(recvPort);
         this.userID = userID;
+        clientColor = userID % 255;
     }
 
     private void Update()
     {
         var packet = recvChannel.GetPacket();
 
+        int[] playerJoined = {-1, -1};
+        
         if (packet != null) {
             var buffer = packet.buffer;
 
             //deserialize
-            CubeEntity.ClientDeserialize(interpolationBuffer, buffer, displaySeq, commands);
+            CubeEntity.ClientDeserialize(interpolationBuffer, playerJoined, buffer, displaySeq, commands);
             //networkSeq++;
         }
 
@@ -57,6 +62,12 @@ public class CubeClient : MonoBehaviour
         {
             //accumCli += Time.deltaTime;
             time += Time.deltaTime;
+            
+            if (playerJoined[0] != -1)
+            {
+                InstantiateCubes(playerJoined);
+            }
+            
             var previousTime = interpolationBuffer[0].Time;
             var nextTime = interpolationBuffer[1].Time;
             if (time >= nextTime) {
@@ -101,24 +112,51 @@ public class CubeClient : MonoBehaviour
             packet.Free();
         }
     }
+
+    private void InstantiateCubes(int[] playerJoined)
+    {
+        if (cubes.Count == 0) // this client is the player who just joined
+        {
+            foreach (var userStatePair in interpolationBuffer[0].UserStates)
+            {
+                var player = Instantiate(cubePrefab, transform);
+                Renderer rndr = player.GetComponent<Renderer>();
+                rndr.material.color = new Color(clientColor, clientColor, clientColor);
+                // player.GetComponent<>()
+                cubes.Add(userStatePair.Key, player);
+            }
+        }
+        else // just instantiate the new player
+        {
+            var newPlayer = Instantiate(cubePrefab, transform);
+            var rndr = newPlayer.GetComponent<Renderer>();
+            rndr.material.color = new Color(clientColor, clientColor, clientColor);
+            cubes.Add(playerJoined[0], newPlayer);
+        }
+    }
     
     private void Interpolate(Snapshot prevSnapshot, Snapshot nextSnapshot, float t)
     {
         //Debug.Log(prevSnapshot + " " + nextSnapshot);
-        var position = new Vector3();
-        var rotation = new Quaternion();
-
-        position.x = InterpolateAxis(prevSnapshot.Position.x, nextSnapshot.Position.x, t);
-        position.y = InterpolateAxis(prevSnapshot.Position.y, nextSnapshot.Position.y, t);
-        position.z = InterpolateAxis(prevSnapshot.Position.z, nextSnapshot.Position.z, t);
+        foreach (var userCubePair in cubes)
+        {
+            var position = new Vector3();
+            var rotation = new Quaternion();
+            UserState prevUserState = prevSnapshot.UserStates[userCubePair.Key];
+            UserState nextUserState = nextSnapshot.UserStates[userCubePair.Key];
+            
+            position.x = InterpolateAxis(prevUserState.Position.x, nextUserState.Position.x, t);
+            position.y = InterpolateAxis(prevUserState.Position.y, nextUserState.Position.y, t);
+            position.z = InterpolateAxis(prevUserState.Position.z, nextUserState.Position.z, t);
     
-        rotation.w = InterpolateAxis(prevSnapshot.Rotation.w, nextSnapshot.Rotation.w, t);
-        rotation.x = InterpolateAxis(prevSnapshot.Rotation.x, nextSnapshot.Rotation.x, t);
-        rotation.y = InterpolateAxis(prevSnapshot.Rotation.y, nextSnapshot.Rotation.y, t);
-        rotation.z = InterpolateAxis(prevSnapshot.Rotation.z, nextSnapshot.Rotation.z, t);
+            rotation.w = InterpolateAxis(prevUserState.Rotation.w, nextUserState.Rotation.w, t);
+            rotation.x = InterpolateAxis(prevUserState.Rotation.x, nextUserState.Rotation.x, t);
+            rotation.y = InterpolateAxis(prevUserState.Rotation.y, nextUserState.Rotation.y, t);
+            rotation.z = InterpolateAxis(prevUserState.Rotation.z, nextUserState.Rotation.z, t);
     
-        transform.position = position;
-        transform.rotation = rotation;
+            transform.position = position;
+            transform.rotation = rotation;
+        }
     }
 
     private float InterpolateAxis(float currentSnapValue, float nextSnapValue, float t)

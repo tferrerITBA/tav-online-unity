@@ -1,6 +1,8 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.Net;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 public class ClientManager : MonoBehaviour
 {
@@ -39,5 +41,11 @@ public class ClientManager : MonoBehaviour
             
             packet.Free();
         }
+    }
+
+    private void OnDestroy()
+    {
+        playerJoinRecvChannel.Disconnect();
+        playerJoinSendChannel.Disconnect();
     }
 }
