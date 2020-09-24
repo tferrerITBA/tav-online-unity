@@ -52,6 +52,10 @@ public class SimulationTest : MonoBehaviour
             
             Rigidbody newCube = Instantiate(cubePrefab); // instantiate server cube (gray)
             serverCubes.Add(userID, newCube);
+            
+            InstantiateClient(userID, sendBasePort + clientCount * PortsPerClient,
+                recvBasePort + clientCount * PortsPerClient);
+            clientCount++;
 
             foreach (var clientPair in clientManager.cubeClients)
             {
@@ -59,17 +63,12 @@ public class SimulationTest : MonoBehaviour
                 CubeEntity.PlayerJoinedSerialize(playerJoined.buffer, userID, serverCubes.Count);
                 playerJoined.buffer.Flush();
                 
-                Debug.Log(clientPair.Value.recvPort + " " + clientPair.Value.recvChannel);
                 string serverIP = "127.0.0.1";
                 var remoteEp = new IPEndPoint(IPAddress.Parse(serverIP), clientPair.Value.recvPort);
                 clientPair.Value.recvChannel.Send(playerJoined, remoteEp);
 
                 packet.Free();
             }
-            
-            InstantiateClient(userID, sendBasePort + clientCount * PortsPerClient,
-                recvBasePort + clientCount * PortsPerClient);
-            clientCount++;
         }
 
         if (serverConnected)
@@ -90,8 +89,10 @@ public class SimulationTest : MonoBehaviour
             
             if (commandPacket != null) {
                 var buffer = commandPacket.buffer;
+                Debug.Log($"Llego paquete de commands!! userID {userID}");
 
                 List<Commands> commandsList = CubeEntity.ServerDeserializeInput(buffer);
+
                 var packet = Packet.Obtain();
                 int receivedCommandSequence = -1;
                 foreach (Commands commands in commandsList)

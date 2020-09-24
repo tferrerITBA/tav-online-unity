@@ -28,7 +28,7 @@ namespace Tests
 
         public override string ToString()
         {
-            return $"{nameof(Seq)}: {Seq}, {nameof(Up)}: {Up}, {nameof(Down)}: {Down}, {nameof(Right)}: {Right}, {nameof(Left)}: {Left}, {nameof(Space)}: {Space}";
+            return $"UserID {userID} {nameof(Seq)}: {Seq}, {nameof(Up)}: {Up}, {nameof(Down)}: {Down}, {nameof(Right)}: {Right}, {nameof(Left)}: {Left}, {nameof(Space)}: {Space}";
         }
 
         public Commands(int seq, int userID, bool up, bool down, bool right, bool left, bool space)

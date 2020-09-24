@@ -13,7 +13,7 @@ GameObject:
   - component: {fileID: 3486015604801637707}
   - component: {fileID: 4316777055326187596}
   m_Layer: 0
-  m_Name: CubeClient
+  m_Name: ClientCube
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
@@ -100,4 +100,6 @@ MonoBehaviour:
   displaySeq: 0
   time: 0
   isPlaying: 0
-  minBufferElems: 0
+  cubePrefab: {fileID: 0}
+  clientColor: 0
+  interpolationCount: 2

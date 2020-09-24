@@ -16,6 +16,8 @@ public class CubeClient : MonoBehaviour
     public int displaySeq = 0;
     public float time = 0;
     public bool isPlaying;
+    public bool instantiateCubesPending;
+    public int[] playersToInstantiate;
 
     private List<Snapshot> interpolationBuffer = new List<Snapshot>();
     private List<Commands> commands = new List<Commands>();
@@ -41,14 +43,19 @@ public class CubeClient : MonoBehaviour
     {
         var packet = recvChannel.GetPacket();
 
-        int[] playerJoined = {-1, -1};
-        
         if (packet != null) {
             var buffer = packet.buffer;
 
+            int[] playerJoined = {-1, -1};
             //deserialize
             CubeEntity.ClientDeserialize(interpolationBuffer, playerJoined, buffer, displaySeq, commands);
             //networkSeq++;
+            
+            if (playerJoined[0] != -1)
+            {
+                instantiateCubesPending = true;
+                playersToInstantiate = playerJoined;
+            }
         }
 
         ReadClientInput();
@@ -62,12 +69,13 @@ public class CubeClient : MonoBehaviour
         {
             //accumCli += Time.deltaTime;
             time += Time.deltaTime;
-            
-            if (playerJoined[0] != -1)
+
+            if (instantiateCubesPending)
             {
-                InstantiateCubes(playerJoined);
+                InstantiateCubes(playersToInstantiate);
+                instantiateCubesPending = false;
             }
-            
+
             var previousTime = interpolationBuffer[0].Time;
             var nextTime = interpolationBuffer[1].Time;
             if (time >= nextTime) {
@@ -108,6 +116,8 @@ public class CubeClient : MonoBehaviour
             string serverIP = "127.0.0.1";
             var remoteEp = new IPEndPoint(IPAddress.Parse(serverIP), sendPort);
             sendChannel.Send(packet, remoteEp);
+            
+            Debug.Log($"Marcha commands {currentCommands} a puerto {sendPort}");
 
             packet.Free();
         }
@@ -115,8 +125,10 @@ public class CubeClient : MonoBehaviour
 
     private void InstantiateCubes(int[] playerJoined)
     {
+        Debug.Log($"Instanciando cubos {cubes.Count}");
         if (cubes.Count == 0) // this client is the player who just joined
         {
+            Debug.Log($"Iniciando {interpolationBuffer[0].UserStates.Count} cubos");
             foreach (var userStatePair in interpolationBuffer[0].UserStates)
             {
                 var player = Instantiate(cubePrefab, transform);

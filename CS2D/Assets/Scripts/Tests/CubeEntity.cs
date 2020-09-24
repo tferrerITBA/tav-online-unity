@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using Tests;
 using UnityEngine;
 
@@ -13,26 +14,26 @@ public class CubeEntity
 
     public static void PlayerConnectSerialize(BitBuffer buffer, int userID)
     {
-        buffer.PutInt(PlayerConnect);
+        buffer.PutByte(PlayerConnect);
         buffer.PutInt(userID);
     }
 
     public static int PlayerConnectDeserialize(BitBuffer buffer)
     {
-        buffer.GetInt(); // PlayerConnect
+        buffer.GetByte(); // PlayerConnect
         return buffer.GetInt();
     }
 
     public static void PlayerJoinedSerialize(BitBuffer buffer, int userID, int playerCount)// , int sendPort, int recvPort)
     {
-        buffer.PutInt(PlayerJoined);
+        Debug.Log($"Mandando PlayerJoined {userID} {playerCount}");
+        buffer.PutByte(PlayerJoined);
         buffer.PutInt(userID);
         buffer.PutInt(playerCount);
     }
 
     public static void PlayerJoinedDeserialize(int[] playerJoined, BitBuffer buffer)
     {
-        buffer.GetInt(); // PlayerJoined
         playerJoined[0] = buffer.GetInt(); // userID
         playerJoined[1] = buffer.GetInt(); // playerCount
     }
@@ -63,7 +64,7 @@ public class CubeEntity
 
     public static void ClientDeserialize(List<Snapshot> interpolationBuffer, int[] playerJoined, BitBuffer buffer, int seqCli, List<Commands> clientCommands) {
         var messageType = buffer.GetByte();
-        
+
         if (messageType == UpdateMessage)
         {
             ClientDeserializeUpdate(interpolationBuffer, buffer, seqCli);
@@ -112,6 +113,8 @@ public class CubeEntity
             
             userStates.Add(userID, new UserState(position, rotation));
         }
+        
+        // Debug.Log($"seq {seq} seqCli {seqCli} {userStates.Keys.First()}");
         
         if (seq < seqCli) return;
 
