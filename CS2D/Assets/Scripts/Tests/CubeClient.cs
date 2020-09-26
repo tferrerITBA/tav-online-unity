@@ -4,6 +4,7 @@ using System.Collections.Generic;
 using System.Net;
 using Tests;
 using UnityEngine;
+using Random = UnityEngine.Random;
 
 public class CubeClient : MonoBehaviour
 {
@@ -16,8 +17,7 @@ public class CubeClient : MonoBehaviour
     public int displaySeq = 0;
     public float time = 0;
     public bool isPlaying;
-    public bool instantiateCubesPending;
-    public int[] playersToInstantiate;
+    public PlayerJoined playersToInstantiate = new PlayerJoined();
 
     private List<Snapshot> interpolationBuffer = new List<Snapshot>();
     private List<Commands> commands = new List<Commands>();
@@ -25,7 +25,7 @@ public class CubeClient : MonoBehaviour
 
     public GameObject cubePrefab;
 
-    public int clientColor;
+    public Color clientColor;
     
     public int interpolationCount = 2;
 
@@ -36,7 +36,7 @@ public class CubeClient : MonoBehaviour
         this.recvPort = recvPort;
         this.recvChannel = new Channel(recvPort);
         this.userID = userID;
-        clientColor = userID % 255;
+        clientColor = new Color(Random.value, Random.value, Random.value);
     }
 
     private void Update()
@@ -45,17 +45,10 @@ public class CubeClient : MonoBehaviour
 
         if (packet != null) {
             var buffer = packet.buffer;
-
-            int[] playerJoined = {-1, -1};
-            //deserialize
-            CubeEntity.ClientDeserialize(interpolationBuffer, playerJoined, buffer, displaySeq, commands);
-            //networkSeq++;
             
-            if (playerJoined[0] != -1)
-            {
-                instantiateCubesPending = true;
-                playersToInstantiate = playerJoined;
-            }
+            //deserialize
+            CubeEntity.ClientDeserialize(interpolationBuffer, playersToInstantiate, buffer, displaySeq, commands);
+            //networkSeq++;
         }
 
         ReadClientInput();
@@ -70,10 +63,12 @@ public class CubeClient : MonoBehaviour
             //accumCli += Time.deltaTime;
             time += Time.deltaTime;
 
-            if (instantiateCubesPending)
+            if (playersToInstantiate.InstantiateCubesPending)
             {
                 InstantiateCubes(playersToInstantiate);
-                instantiateCubesPending = false;
+                playersToInstantiate.InstantiateCubesPending = false;
+                displaySeq = playersToInstantiate.Seq;
+                time = playersToInstantiate.Time;
             }
 
             var previousTime = interpolationBuffer[0].Time;
@@ -116,24 +111,20 @@ public class CubeClient : MonoBehaviour
             string serverIP = "127.0.0.1";
             var remoteEp = new IPEndPoint(IPAddress.Parse(serverIP), sendPort);
             sendChannel.Send(packet, remoteEp);
-            
-            Debug.Log($"Marcha commands {currentCommands} a puerto {sendPort}");
 
             packet.Free();
         }
     }
 
-    private void InstantiateCubes(int[] playerJoined)
+    private void InstantiateCubes(PlayerJoined playerJoined)
     {
-        Debug.Log($"Instanciando cubos {cubes.Count}");
         if (cubes.Count == 0) // this client is the player who just joined
         {
-            Debug.Log($"Iniciando {interpolationBuffer[0].UserStates.Count} cubos");
             foreach (var userStatePair in interpolationBuffer[0].UserStates)
             {
                 var player = Instantiate(cubePrefab, transform);
                 Renderer rndr = player.GetComponent<Renderer>();
-                rndr.material.color = new Color(clientColor, clientColor, clientColor);
+                rndr.material.color = clientColor;
                 // player.GetComponent<>()
                 cubes.Add(userStatePair.Key, player);
             }
@@ -142,8 +133,8 @@ public class CubeClient : MonoBehaviour
         {
             var newPlayer = Instantiate(cubePrefab, transform);
             var rndr = newPlayer.GetComponent<Renderer>();
-            rndr.material.color = new Color(clientColor, clientColor, clientColor);
-            cubes.Add(playerJoined[0], newPlayer);
+            rndr.material.color = clientColor;
+            cubes.Add(playerJoined.UserID, newPlayer);
         }
     }
     
@@ -166,8 +157,8 @@ public class CubeClient : MonoBehaviour
             rotation.y = InterpolateAxis(prevUserState.Rotation.y, nextUserState.Rotation.y, t);
             rotation.z = InterpolateAxis(prevUserState.Rotation.z, nextUserState.Rotation.z, t);
     
-            transform.position = position;
-            transform.rotation = rotation;
+            userCubePair.Value.transform.position = position;
+            userCubePair.Value.transform.rotation = rotation;
         }
     }
 

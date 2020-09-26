@@ -50,22 +50,23 @@ public class SimulationTest : MonoBehaviour
         {
             int userID = CubeEntity.PlayerConnectDeserialize(packet.buffer);
             
-            Rigidbody newCube = Instantiate(cubePrefab); // instantiate server cube (gray)
+            Rigidbody newCube = Instantiate(cubePrefab, transform); // instantiate server cube (gray)
             serverCubes.Add(userID, newCube);
             
             InstantiateClient(userID, sendBasePort + clientCount * PortsPerClient,
                 recvBasePort + clientCount * PortsPerClient);
             clientCount++;
 
+            PlayerJoined playerJoined = new PlayerJoined(userID, clientCount, seq, serverTime);
             foreach (var clientPair in clientManager.cubeClients)
             {
-                var playerJoined = Packet.Obtain();
-                CubeEntity.PlayerJoinedSerialize(playerJoined.buffer, userID, serverCubes.Count);
-                playerJoined.buffer.Flush();
+                var playerJoinedPacket = Packet.Obtain();
+                CubeEntity.PlayerJoinedSerialize(playerJoinedPacket.buffer, playerJoined);
+                playerJoinedPacket.buffer.Flush();
                 
                 string serverIP = "127.0.0.1";
                 var remoteEp = new IPEndPoint(IPAddress.Parse(serverIP), clientPair.Value.recvPort);
-                clientPair.Value.recvChannel.Send(playerJoined, remoteEp);
+                clientPair.Value.recvChannel.Send(playerJoinedPacket, remoteEp);
 
                 packet.Free();
             }

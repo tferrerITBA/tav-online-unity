@@ -24,18 +24,22 @@ public class CubeEntity
         return buffer.GetInt();
     }
 
-    public static void PlayerJoinedSerialize(BitBuffer buffer, int userID, int playerCount)// , int sendPort, int recvPort)
+    public static void PlayerJoinedSerialize(BitBuffer buffer, PlayerJoined playerJoined)// , int sendPort, int recvPort)
     {
-        Debug.Log($"Mandando PlayerJoined {userID} {playerCount}");
         buffer.PutByte(PlayerJoined);
-        buffer.PutInt(userID);
-        buffer.PutInt(playerCount);
+        buffer.PutInt(playerJoined.UserID);
+        buffer.PutInt(playerJoined.PlayerCount);
+        buffer.PutInt(playerJoined.Seq);
+        buffer.PutFloat(playerJoined.Time);
     }
 
-    public static void PlayerJoinedDeserialize(int[] playerJoined, BitBuffer buffer)
+    public static void PlayerJoinedDeserialize(PlayerJoined playerJoined, BitBuffer buffer)
     {
-        playerJoined[0] = buffer.GetInt(); // userID
-        playerJoined[1] = buffer.GetInt(); // playerCount
+        playerJoined.UserID = buffer.GetInt();
+        playerJoined.PlayerCount = buffer.GetInt();
+        playerJoined.Seq = buffer.GetInt();
+        playerJoined.Time = buffer.GetFloat();
+        playerJoined.InstantiateCubesPending = true;
     }
     
     public static void ServerWorldSerialize(Dictionary<int, Rigidbody> rigidBodies, BitBuffer buffer, int seq, float time) {
@@ -62,7 +66,7 @@ public class CubeEntity
         }
     }
 
-    public static void ClientDeserialize(List<Snapshot> interpolationBuffer, int[] playerJoined, BitBuffer buffer, int seqCli, List<Commands> clientCommands) {
+    public static void ClientDeserialize(List<Snapshot> interpolationBuffer, PlayerJoined playerJoined, BitBuffer buffer, int seqCli, List<Commands> clientCommands) {
         var messageType = buffer.GetByte();
 
         if (messageType == UpdateMessage)
