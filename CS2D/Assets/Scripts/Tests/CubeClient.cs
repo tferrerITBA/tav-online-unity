@@ -29,8 +29,6 @@ public class CubeClient : MonoBehaviour
     
     public int interpolationCount = 2;
 
-    public bool ISFIRST;
-
     public void Initialize(int sendPort, int recvPort, int userID)
     {
         this.sendPort = sendPort;
@@ -50,14 +48,7 @@ public class CubeClient : MonoBehaviour
             var buffer = packet.buffer;
             
             //deserialize
-            CubeEntity.ClientDeserialize(interpolationBuffer, playersToInstantiate, buffer, displaySeq, commands, ISFIRST);
-            if (!ISFIRST)
-            {
-                // Debug.Log($"USER {userID} Buffer {interpolationBuffer.Count}");
-                // Debug.Log($"Display Seq {displaySeq}");
-                // Debug.Log($"Buffer Seq {interpolationBuffer[0].Seq}");
-            }
-                
+            CubeEntity.ClientDeserialize(interpolationBuffer, playersToInstantiate, buffer, displaySeq, commands);
             //networkSeq++;
         }
 
@@ -150,16 +141,6 @@ public class CubeClient : MonoBehaviour
     
     private void Interpolate(Snapshot prevSnapshot, Snapshot nextSnapshot, float t)
     {
-        if (time.Equals(playersToInstantiate.Time))
-        {
-            //Debug.Log($"MOSTRANDO STATES DEL USER {userID}");
-            foreach (var state in prevSnapshot.UserStates)
-            {
-                //Debug.Log($"User: {state.Key} - {state}");
-            }
-        }
-
-        //Debug.Log(prevSnapshot + " " + nextSnapshot);
         foreach (var userCubePair in cubes)
         {
             if (!prevSnapshot.UserStates.ContainsKey(userCubePair.Key))

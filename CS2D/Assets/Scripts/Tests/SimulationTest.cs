@@ -90,7 +90,6 @@ public class SimulationTest : MonoBehaviour
             
             if (commandPacket != null) {
                 var buffer = commandPacket.buffer;
-                Debug.Log($"Llego paquete de commands!! userID {userID}");
 
                 List<Commands> commandsList = CubeEntity.ServerDeserializeInput(buffer);
 
@@ -157,8 +156,6 @@ public class SimulationTest : MonoBehaviour
     private void InstantiateClient(int userID, int sendPort, int recvPort)
     {
         CubeClient cubeClientComponent = Instantiate(clientPrefab);
-        if (clientManager.CubeClients.Count == 0)
-            cubeClientComponent.ISFIRST = true;
         clientManager.CubeClients.Add(userID, cubeClientComponent);
             
         cubeClientComponent.Initialize(sendPort, recvPort, userID);
