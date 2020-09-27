@@ -16,4 +16,9 @@ public class UserState
     public Vector3 Position => position;
 
     public Quaternion Rotation => rotation;
+
+    public override string ToString()
+    {
+        return $"Position: {position}; Rotation: {rotation}";
+    }
 }

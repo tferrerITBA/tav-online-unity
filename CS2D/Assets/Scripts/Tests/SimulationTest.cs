@@ -110,9 +110,12 @@ public class SimulationTest : MonoBehaviour
 
                 packet.Free();
             }
-            
-            if (accum >= sendRate)
+        }
+        if (accum >= sendRate)
+        {
+            foreach (var cubeClientPair in clientManager.cubeClients)
             {
+                CubeClient cubeClient = cubeClientPair.Value;
                 //serialize
                 var packet = Packet.Obtain();
                 CubeEntity.ServerWorldSerialize(serverCubes, packet.buffer, seq, serverTime);
@@ -123,10 +126,10 @@ public class SimulationTest : MonoBehaviour
                 cubeClient.recvChannel.Send(packet, remoteEp);
 
                 packet.Free();
-
-                accum -= sendRate;
-                seq++;
             }
+
+            accum -= sendRate;
+            seq++;
         }
     }
     
@@ -154,8 +157,11 @@ public class SimulationTest : MonoBehaviour
     private void InstantiateClient(int userID, int sendPort, int recvPort)
     {
         CubeClient cubeClientComponent = Instantiate(clientPrefab);
+        if (clientManager.CubeClients.Count == 0)
+            cubeClientComponent.ISFIRST = true;
         clientManager.CubeClients.Add(userID, cubeClientComponent);
             
         cubeClientComponent.Initialize(sendPort, recvPort, userID);
+        cubeClientComponent.gameObject.SetActive(true);
     }
 }

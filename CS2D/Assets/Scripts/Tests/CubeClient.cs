@@ -29,6 +29,8 @@ public class CubeClient : MonoBehaviour
     
     public int interpolationCount = 2;
 
+    public bool ISFIRST;
+
     public void Initialize(int sendPort, int recvPort, int userID)
     {
         this.sendPort = sendPort;
@@ -43,11 +45,19 @@ public class CubeClient : MonoBehaviour
     {
         var packet = recvChannel.GetPacket();
 
-        if (packet != null) {
+        if (packet != null)
+        {
             var buffer = packet.buffer;
             
             //deserialize
-            CubeEntity.ClientDeserialize(interpolationBuffer, playersToInstantiate, buffer, displaySeq, commands);
+            CubeEntity.ClientDeserialize(interpolationBuffer, playersToInstantiate, buffer, displaySeq, commands, ISFIRST);
+            if (!ISFIRST)
+            {
+                // Debug.Log($"USER {userID} Buffer {interpolationBuffer.Count}");
+                // Debug.Log($"Display Seq {displaySeq}");
+                // Debug.Log($"Buffer Seq {interpolationBuffer[0].Seq}");
+            }
+                
             //networkSeq++;
         }
 
@@ -67,8 +77,8 @@ public class CubeClient : MonoBehaviour
             {
                 InstantiateCubes(playersToInstantiate);
                 playersToInstantiate.InstantiateCubesPending = false;
-                displaySeq = playersToInstantiate.Seq;
-                time = playersToInstantiate.Time;
+                displaySeq = interpolationBuffer[0].Seq;
+                time = interpolationBuffer[0].Time;
             }
 
             var previousTime = interpolationBuffer[0].Time;
@@ -140,11 +150,24 @@ public class CubeClient : MonoBehaviour
     
     private void Interpolate(Snapshot prevSnapshot, Snapshot nextSnapshot, float t)
     {
+        if (time.Equals(playersToInstantiate.Time))
+        {
+            //Debug.Log($"MOSTRANDO STATES DEL USER {userID}");
+            foreach (var state in prevSnapshot.UserStates)
+            {
+                //Debug.Log($"User: {state.Key} - {state}");
+            }
+        }
+
         //Debug.Log(prevSnapshot + " " + nextSnapshot);
         foreach (var userCubePair in cubes)
         {
+            if (!prevSnapshot.UserStates.ContainsKey(userCubePair.Key))
+                continue;
+            
             var position = new Vector3();
             var rotation = new Quaternion();
+
             UserState prevUserState = prevSnapshot.UserStates[userCubePair.Key];
             UserState nextUserState = nextSnapshot.UserStates[userCubePair.Key];
             

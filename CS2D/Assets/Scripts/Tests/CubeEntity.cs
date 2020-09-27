@@ -66,12 +66,13 @@ public class CubeEntity
         }
     }
 
-    public static void ClientDeserialize(List<Snapshot> interpolationBuffer, PlayerJoined playerJoined, BitBuffer buffer, int seqCli, List<Commands> clientCommands) {
+    public static void ClientDeserialize(List<Snapshot> interpolationBuffer, PlayerJoined playerJoined, BitBuffer buffer,
+        int seqCli, List<Commands> clientCommands, bool ISFIRST) {
         var messageType = buffer.GetByte();
 
         if (messageType == UpdateMessage)
         {
-            ClientDeserializeUpdate(interpolationBuffer, buffer, seqCli);
+            ClientDeserializeUpdate(interpolationBuffer, buffer, seqCli, ISFIRST);
         }
         else if (messageType == PlayerJoined)
         {
@@ -93,7 +94,8 @@ public class CubeEntity
         }
     }
 
-    private static void ClientDeserializeUpdate(List<Snapshot> interpolationBuffer, BitBuffer buffer, int seqCli)
+    private static void ClientDeserializeUpdate(List<Snapshot> interpolationBuffer, BitBuffer buffer, int seqCli,
+        bool ISFIRST)
     {
         var seq = buffer.GetInt();
         var time = buffer.GetFloat();
@@ -119,8 +121,12 @@ public class CubeEntity
         }
         
         // Debug.Log($"seq {seq} seqCli {seqCli} {userStates.Keys.First()}");
-        
-        if (seq < seqCli) return;
+
+        if (seq < seqCli)
+        {
+            Debug.Log($"seq {seq} < seqCli {seqCli}");
+            return;
+        }
 
         Snapshot snapshot = new Snapshot(seq, time, userStates);
         for (i = 0; i < interpolationBuffer.Count; i++)
