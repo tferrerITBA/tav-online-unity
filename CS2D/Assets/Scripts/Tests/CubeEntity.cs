@@ -42,7 +42,7 @@ public class CubeEntity
         playerJoined.InstantiateCubesPending = true;
     }
     
-    public static void ServerWorldSerialize(Dictionary<int, Rigidbody> rigidBodies, BitBuffer buffer, int seq, float time) {
+    public static void ServerWorldSerialize(Dictionary<int, CharacterController> rigidBodies, BitBuffer buffer, int seq, float time) {
         
         buffer.PutByte(UpdateMessage);
         buffer.PutInt(seq);

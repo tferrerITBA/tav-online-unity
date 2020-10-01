@@ -24,6 +24,7 @@ public class CubeClient : MonoBehaviour
     private Dictionary<int, GameObject> cubes = new Dictionary<int, GameObject>();
 
     public GameObject cubePrefab;
+    public GameObject playerCubePrefab;
 
     public Color clientColor;
     
@@ -124,7 +125,15 @@ public class CubeClient : MonoBehaviour
         {
             foreach (var userStatePair in interpolationBuffer[0].UserStates)
             {
-                var player = Instantiate(cubePrefab, transform);
+                GameObject player;
+                if (userStatePair.Key == userID)
+                {
+                    player = Instantiate(playerCubePrefab, transform);
+                }
+                else
+                {
+                    player = Instantiate(cubePrefab, transform);
+                }
                 Renderer rndr = player.GetComponent<Renderer>();
                 rndr.material.color = clientColor;
                 cubes.Add(userStatePair.Key, player);

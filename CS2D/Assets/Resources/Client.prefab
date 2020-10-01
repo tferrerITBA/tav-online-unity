@@ -49,6 +49,9 @@ MonoBehaviour:
   displaySeq: 0
   time: 0
   isPlaying: 0
-  cubePrefab: {fileID: 3486015604801637705, guid: 313bcb7fd7283492e8e15fc30ec40be2,
+  cubePrefab: {fileID: 2337597147086023070, guid: 00fd97e681ec14f479c9e7b7790e0849,
     type: 3}
-  minBufferElems: 0
+  playerCubePrefab: {fileID: 2337597147086023070, guid: 28cc0406fbd014feabdbff6672bc5930,
+    type: 3}
+  clientColor: {r: 0, g: 0, b: 0, a: 0}
+  interpolationCount: 2

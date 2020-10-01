@@ -11,7 +11,7 @@ using Random = System.Random;
 
 public class SimulationTest : MonoBehaviour
 {
-    [SerializeField] private Dictionary<int, Rigidbody> serverCubes = new Dictionary<int, Rigidbody>();
+    private Dictionary<int, CharacterController> serverCubes = new Dictionary<int, CharacterController>();
 
     public const int PortsPerClient = 2;
     public int sendBasePort = 9000;
@@ -26,10 +26,12 @@ public class SimulationTest : MonoBehaviour
     private int seq = 0; // Next snapshot to send
     private bool serverConnected;
 
-    public Rigidbody cubePrefab;
+    public CharacterController cubePrefab;
     public CubeClient clientPrefab;
 
     public ClientManager clientManager;
+
+    public float gravity = -9.81f;
 
     // Start is called before the first frame update
     void Start() {
@@ -50,7 +52,7 @@ public class SimulationTest : MonoBehaviour
         {
             int userID = CubeEntity.PlayerConnectDeserialize(packet.buffer);
             
-            Rigidbody newCube = Instantiate(cubePrefab, transform); // instantiate server cube (gray)
+            CharacterController newCube = Instantiate(cubePrefab, transform); // instantiate server cube (gray)
             serverCubes.Add(userID, newCube);
             
             InstantiateClient(userID, sendBasePort + clientCount * PortsPerClient,
@@ -81,6 +83,17 @@ public class SimulationTest : MonoBehaviour
     private void UpdateServer()
     {
         serverTime += Time.deltaTime;
+
+        foreach (var cubePair in serverCubes)
+        {
+            var cube = cubePair.Value;
+            if (!cube.isGrounded)
+            {
+                Vector3 vel = Vector3.zero;
+                vel.y = gravity * Time.deltaTime;
+                cube.Move(vel * Time.deltaTime);
+            }
+        }
 
         foreach (var cubeClientPair in clientManager.cubeClients)
         {
@@ -131,25 +144,32 @@ public class SimulationTest : MonoBehaviour
             seq++;
         }
     }
-    
+
     private void ExecuteClientInput(Commands commands)
     {
-        Rigidbody cubeRigidBody = serverCubes[commands.UserID];
-        //apply input
-        if (commands.Space) {
-            cubeRigidBody.AddForceAtPosition(Vector3.up * 5, Vector3.zero, ForceMode.Impulse);
+        CharacterController cubeCharacterCtrl = serverCubes[commands.UserID];
+        
+        float horizontalInput = Input.GetAxis("Horizontal");
+        float verticalInput = Input.GetAxis ("Vertical");
+        Vector3 move = new Vector3();
+
+        if (commands.Space)
+        {
+            
+            // cubeCharacterCtrl.Move();
+            // cube.AddForceAtPosition(Vector3.up * 5, Vector3.zero, ForceMode.Impulse);
         }
         if (commands.Left) {
-            cubeRigidBody.AddForceAtPosition(Vector3.left * 5, Vector3.zero, ForceMode.Impulse);
+            // cube.AddForceAtPosition(Vector3.left * 5, Vector3.zero, ForceMode.Impulse);
         }
         if (commands.Right) {
-            cubeRigidBody.AddForceAtPosition(Vector3.right * 5, Vector3.zero, ForceMode.Impulse);
+            // cube.AddForceAtPosition(Vector3.right * 5, Vector3.zero, ForceMode.Impulse);
         }
         if (commands.Up) {
-            cubeRigidBody.AddForceAtPosition(Vector3.forward * 5, Vector3.zero, ForceMode.Impulse);
+            // cube.AddForceAtPosition(Vector3.forward * 5, Vector3.zero, ForceMode.Impulse);
         }
         if (commands.Down) {
-            cubeRigidBody.AddForceAtPosition(Vector3.back * 5, Vector3.zero, ForceMode.Impulse);
+            // cube.AddForceAtPosition(Vector3.back * 5, Vector3.zero, ForceMode.Impulse);
         }
     }
 
