@@ -225,7 +225,7 @@ GameObject:
   m_Component:
   - component: {fileID: 803758058}
   - component: {fileID: 803758057}
-  m_Layer: 0
+  m_Layer: 8
   m_Name: SimulationTest
   m_TagString: Untagged
   m_Icon: {fileID: 0}

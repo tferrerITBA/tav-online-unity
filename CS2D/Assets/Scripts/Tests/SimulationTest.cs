@@ -158,7 +158,8 @@ public class SimulationTest : MonoBehaviour
         CubeClient cubeClientComponent = Instantiate(clientPrefab);
         clientManager.CubeClients.Add(userID, cubeClientComponent);
             
-        cubeClientComponent.Initialize(sendPort, recvPort, userID);
+        cubeClientComponent.Initialize(sendPort, recvPort, userID,
+            gameObject.layer + clientCount + 1);
         cubeClientComponent.gameObject.SetActive(true);
     }
 }

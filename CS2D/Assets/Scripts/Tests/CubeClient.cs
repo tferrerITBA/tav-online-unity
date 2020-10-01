@@ -29,13 +29,14 @@ public class CubeClient : MonoBehaviour
     
     public int interpolationCount = 2;
 
-    public void Initialize(int sendPort, int recvPort, int userID)
+    public void Initialize(int sendPort, int recvPort, int userID, int cubesLayer)
     {
         this.sendPort = sendPort;
         this.sendChannel = new Channel(sendPort);
         this.recvPort = recvPort;
         this.recvChannel = new Channel(recvPort);
         this.userID = userID;
+        gameObject.layer = cubesLayer;
         clientColor = new Color(Random.value, Random.value, Random.value);
     }
 
@@ -126,7 +127,6 @@ public class CubeClient : MonoBehaviour
                 var player = Instantiate(cubePrefab, transform);
                 Renderer rndr = player.GetComponent<Renderer>();
                 rndr.material.color = clientColor;
-                // player.GetComponent<>()
                 cubes.Add(userStatePair.Key, player);
             }
         }

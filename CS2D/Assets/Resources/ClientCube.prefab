@@ -11,7 +11,6 @@ GameObject:
   - component: {fileID: 3486015604801637704}
   - component: {fileID: 3486015604801637706}
   - component: {fileID: 3486015604801637707}
-  - component: {fileID: 4316777055326187596}
   m_Layer: 0
   m_Name: ClientCube
   m_TagString: Untagged
@@ -82,24 +81,3 @@ MeshRenderer:
   m_SortingLayer: 0
   m_SortingOrder: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!114 &4316777055326187596
-MonoBehaviour:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3486015604801637705}
-  m_Enabled: 0
-  m_EditorHideFlags: 0
-  m_Script: {fileID: 11500000, guid: b4278f1119c814d268f3114756baa4c1, type: 3}
-  m_Name: 
-  m_EditorClassIdentifier: 
-  sendPort: 0
-  recvPort: 0
-  userID: 0
-  displaySeq: 0
-  time: 0
-  isPlaying: 0
-  cubePrefab: {fileID: 0}
-  clientColor: 0
-  interpolationCount: 2
