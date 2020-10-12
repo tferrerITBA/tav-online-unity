@@ -13,7 +13,7 @@ using Vector3 = UnityEngine.Vector3;
 
 public class SimulationTest : MonoBehaviour
 {
-    private Dictionary<int, CharacterController> serverCubes = new Dictionary<int, CharacterController>();
+    private Dictionary<int, ServerClientInfo> clients = new Dictionary<int, ServerClientInfo>();
 
     public const int PortsPerClient = 2;
     public int sendBasePort = 9000;
@@ -55,8 +55,8 @@ public class SimulationTest : MonoBehaviour
             int userID = Serializer.PlayerConnectDeserialize(packet.buffer);
             
             CharacterController newCube = Instantiate(cubePrefab, transform); // instantiate server cube (gray)
-            serverCubes.Add(userID, newCube);
-            
+            clients.Add(userID, new ServerClientInfo(userID, newCube));
+
             InstantiateClient(userID, sendBasePort + clientCount * PortsPerClient,
                 recvBasePort + clientCount * PortsPerClient);
             clientCount++;
@@ -86,9 +86,9 @@ public class SimulationTest : MonoBehaviour
     {
         serverTime += Time.deltaTime;
 
-        foreach (var cubePair in serverCubes)
+        foreach (var client in clients)
         {
-            var cube = cubePair.Value;
+            var cube = client.Value.characterController;
             if (!cube.isGrounded)
             {
                 Vector3 vel = new Vector3(0, gravity * Time.deltaTime, 0);
@@ -132,7 +132,7 @@ public class SimulationTest : MonoBehaviour
                 CubeClient cubeClient = cubeClientPair.Value;
                 //serialize
                 var packet = Packet.Obtain();
-                Serializer.ServerWorldSerialize(serverCubes, packet.buffer, seq, serverTime);
+                Serializer.ServerWorldSerialize(clients, packet.buffer, seq, serverTime);
                 packet.buffer.Flush();
 
                 string serverIP = "127.0.0.1";
@@ -149,7 +149,7 @@ public class SimulationTest : MonoBehaviour
 
     private void ExecuteClientInput(Commands commands)
     {
-        CharacterController cubeCharacterCtrl = serverCubes[commands.UserID];
+        CharacterController cubeCharacterCtrl = clients[commands.UserID].characterController;
         
         float horizontalInput = Input.GetAxis("Horizontal");
         float verticalInput = Input.GetAxis ("Vertical");

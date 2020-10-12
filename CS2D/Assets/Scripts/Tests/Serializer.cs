@@ -42,16 +42,16 @@ public class Serializer
         playerJoined.InstantiateCubesPending = true;
     }
     
-    public static void ServerWorldSerialize(Dictionary<int, CharacterController> rigidBodies, BitBuffer buffer, int seq, float time) {
+    public static void ServerWorldSerialize(Dictionary<int, ServerClientInfo> clients, BitBuffer buffer, int seq, float time) {
         
         buffer.PutByte(UpdateMessage);
         buffer.PutInt(seq);
         buffer.PutFloat(time);
-        buffer.PutInt(rigidBodies.Count);
+        buffer.PutInt(clients.Count);
         
-        foreach (var userRigidBodyPair in rigidBodies)
+        foreach (var userRigidBodyPair in clients)
         {
-            var transform = userRigidBodyPair.Value.transform;
+            var transform = userRigidBodyPair.Value.characterController.transform;
             var position = transform.position;
             var rotation = transform.rotation;
             
