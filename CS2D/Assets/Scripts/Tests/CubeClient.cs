@@ -15,6 +15,7 @@ public class CubeClient : MonoBehaviour
 
     public int userID;
     public int displaySeq = 0;
+    public int cmdSeq = 1;
     public float time = 0;
     public bool isPlaying;
     public PlayerJoined playersToInstantiate = new PlayerJoined();
@@ -95,6 +96,7 @@ public class CubeClient : MonoBehaviour
     private void ReadClientInput()
     {
         Commands currentCommands = new Commands(
+            cmdSeq,
             userID,
             Input.GetKeyDown(KeyCode.UpArrow),
             Input.GetKeyDown(KeyCode.DownArrow),
@@ -114,8 +116,9 @@ public class CubeClient : MonoBehaviour
             string serverIP = "127.0.0.1";
             var remoteEp = new IPEndPoint(IPAddress.Parse(serverIP), sendPort);
             sendChannel.Send(packet, remoteEp);
-
             packet.Free();
+
+            cmdSeq++;
         }
     }
 
@@ -134,6 +137,7 @@ public class CubeClient : MonoBehaviour
                 {
                     player = Instantiate(cubePrefab, transform);
                 }
+                player.layer = gameObject.layer;
                 Renderer rndr = player.GetComponent<Renderer>();
                 rndr.material.color = clientColor;
                 cubes.Add(userStatePair.Key, player);
@@ -142,6 +146,7 @@ public class CubeClient : MonoBehaviour
         else // just instantiate the new player
         {
             var newPlayer = Instantiate(cubePrefab, transform);
+            newPlayer.layer = gameObject.layer;
             var rndr = newPlayer.GetComponent<Renderer>();
             rndr.material.color = clientColor;
             cubes.Add(playerJoined.UserID, newPlayer);

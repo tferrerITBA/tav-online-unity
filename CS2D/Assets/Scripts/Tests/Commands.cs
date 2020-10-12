@@ -4,7 +4,6 @@ namespace Tests
 {
     public class Commands
     {
-        private static int _seq = 0;
         private int userID;
         private int seq;
         private bool up;
@@ -12,19 +11,6 @@ namespace Tests
         private bool right;
         private bool left;
         private bool space;
-
-        public Commands(int userID, bool up, bool down, bool right, bool left, bool space)
-        {
-            this.userID = userID;
-            this.seq = _seq;
-            this.up = up;
-            this.down = down;
-            this.right = right;
-            this.left = left;
-            this.space = space;
-            if (hasCommand())
-                _seq++;
-        }
 
         public override string ToString()
         {

@@ -3,11 +3,13 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using System.Net;
+using System.Numerics;
 using Tests;
 using UnityEngine;
 using UnityEngine.PlayerLoop;
 using UnityEngine.Serialization;
 using Random = System.Random;
+using Vector3 = UnityEngine.Vector3;
 
 public class SimulationTest : MonoBehaviour
 {
@@ -39,7 +41,7 @@ public class SimulationTest : MonoBehaviour
     }
 
     // Update is called once per frame
-    void Update() {
+    void FixedUpdate() {
         if (Input.GetKeyDown(KeyCode.D))
         {
             serverConnected = !serverConnected;
@@ -89,9 +91,9 @@ public class SimulationTest : MonoBehaviour
             var cube = cubePair.Value;
             if (!cube.isGrounded)
             {
-                Vector3 vel = Vector3.zero;
-                vel.y = gravity * Time.deltaTime;
-                cube.Move(vel * Time.deltaTime);
+                Vector3 vel = new Vector3(0, gravity * Time.deltaTime, 0);
+                // cube.Move(vel * Time.deltaTime);
+                cube.SimpleMove(Vector3.zero);
             }
         }
 
@@ -151,26 +153,31 @@ public class SimulationTest : MonoBehaviour
         
         float horizontalInput = Input.GetAxis("Horizontal");
         float verticalInput = Input.GetAxis ("Vertical");
-        Vector3 move = new Vector3();
+        Vector3 dir = new Vector3();
 
         if (commands.Space)
         {
-            
+            dir = new Vector3(0, 1, 0);
             // cubeCharacterCtrl.Move();
             // cube.AddForceAtPosition(Vector3.up * 5, Vector3.zero, ForceMode.Impulse);
         }
         if (commands.Left) {
+            dir = new Vector3(-1, 0, 0);
             // cube.AddForceAtPosition(Vector3.left * 5, Vector3.zero, ForceMode.Impulse);
         }
         if (commands.Right) {
+            dir = new Vector3(1, 0, 0);
             // cube.AddForceAtPosition(Vector3.right * 5, Vector3.zero, ForceMode.Impulse);
         }
         if (commands.Up) {
+            dir = new Vector3(0, 0, 1);
             // cube.AddForceAtPosition(Vector3.forward * 5, Vector3.zero, ForceMode.Impulse);
         }
         if (commands.Down) {
+            dir = new Vector3(0, 0, -1);
             // cube.AddForceAtPosition(Vector3.back * 5, Vector3.zero, ForceMode.Impulse);
         }
+        cubeCharacterCtrl.Move(dir);
     }
 
     private void InstantiateClient(int userID, int sendPort, int recvPort)
