@@ -123,6 +123,8 @@ public class SimulationTest : MonoBehaviour
                 cubeClient.recvChannel.Send(packet, remoteEp);
 
                 packet.Free();
+
+                clients[userID].cmdSeqReceived = receivedCommandSequence;
             }
         }
         if (accum >= sendRate)
