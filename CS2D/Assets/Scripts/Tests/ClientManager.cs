@@ -32,7 +32,7 @@ public class ClientManager : MonoBehaviour
         {
             int userID = Random.Range(0, 8096);
             var packet = Packet.Obtain();
-            CubeEntity.PlayerConnectSerialize(packet.buffer, userID);
+            Serializer.PlayerConnectSerialize(packet.buffer, userID);
             packet.buffer.Flush();
             
             string serverIP = "127.0.0.1";

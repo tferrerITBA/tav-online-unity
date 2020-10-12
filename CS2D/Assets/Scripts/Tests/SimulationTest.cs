@@ -52,7 +52,7 @@ public class SimulationTest : MonoBehaviour
         var packet = clientManager.playerJoinSendChannel.GetPacket();
         if (packet != null)
         {
-            int userID = CubeEntity.PlayerConnectDeserialize(packet.buffer);
+            int userID = Serializer.PlayerConnectDeserialize(packet.buffer);
             
             CharacterController newCube = Instantiate(cubePrefab, transform); // instantiate server cube (gray)
             serverCubes.Add(userID, newCube);
@@ -65,7 +65,7 @@ public class SimulationTest : MonoBehaviour
             foreach (var clientPair in clientManager.cubeClients)
             {
                 var playerJoinedPacket = Packet.Obtain();
-                CubeEntity.PlayerJoinedSerialize(playerJoinedPacket.buffer, playerJoined);
+                Serializer.PlayerJoinedSerialize(playerJoinedPacket.buffer, playerJoined);
                 playerJoinedPacket.buffer.Flush();
                 
                 string serverIP = "127.0.0.1";
@@ -106,7 +106,7 @@ public class SimulationTest : MonoBehaviour
             if (commandPacket != null) {
                 var buffer = commandPacket.buffer;
 
-                List<Commands> commandsList = CubeEntity.ServerDeserializeInput(buffer);
+                List<Commands> commandsList = Serializer.ServerDeserializeInput(buffer);
 
                 var packet = Packet.Obtain();
                 int receivedCommandSequence = -1;
@@ -115,7 +115,7 @@ public class SimulationTest : MonoBehaviour
                     receivedCommandSequence = commands.Seq;
                     ExecuteClientInput(commands);
                 }
-                CubeEntity.ServerSerializeAck(packet.buffer, receivedCommandSequence);
+                Serializer.ServerSerializeAck(packet.buffer, receivedCommandSequence);
                 packet.buffer.Flush();
 
                 string serverIP = "127.0.0.1";
@@ -132,7 +132,7 @@ public class SimulationTest : MonoBehaviour
                 CubeClient cubeClient = cubeClientPair.Value;
                 //serialize
                 var packet = Packet.Obtain();
-                CubeEntity.ServerWorldSerialize(serverCubes, packet.buffer, seq, serverTime);
+                Serializer.ServerWorldSerialize(serverCubes, packet.buffer, seq, serverTime);
                 packet.buffer.Flush();
 
                 string serverIP = "127.0.0.1";

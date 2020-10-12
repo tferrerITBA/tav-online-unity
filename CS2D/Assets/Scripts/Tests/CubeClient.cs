@@ -51,7 +51,7 @@ public class CubeClient : MonoBehaviour
             var buffer = packet.buffer;
             
             //deserialize
-            CubeEntity.ClientDeserialize(interpolationBuffer, playersToInstantiate, buffer, displaySeq, commands);
+            Serializer.ClientDeserialize(interpolationBuffer, playersToInstantiate, buffer, displaySeq, commands);
             //networkSeq++;
         }
 
@@ -110,7 +110,7 @@ public class CubeClient : MonoBehaviour
             commands.Add(currentCommands);
             //serialize
             var packet = Packet.Obtain();
-            CubeEntity.ClientSerializeInput(commands, packet.buffer);
+            Serializer.ClientSerializeInput(commands, packet.buffer);
             packet.buffer.Flush();
 
             string serverIP = "127.0.0.1";

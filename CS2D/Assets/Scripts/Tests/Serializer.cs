@@ -4,7 +4,7 @@ using System.Linq;
 using Tests;
 using UnityEngine;
 
-public class CubeEntity
+public class Serializer
 {
     private const int PlayerConnect = 24;
     private const int PlayerJoined = 25;
