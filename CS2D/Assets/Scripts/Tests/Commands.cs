@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 namespace Tests
@@ -6,45 +7,33 @@ namespace Tests
     {
         private int userID;
         private int seq;
-        private bool up;
-        private bool down;
-        private bool right;
-        private bool left;
-        private bool space;
+        private float vertical;
+        private float horizontal;
 
         public override string ToString()
         {
-            return $"UserID {userID} {nameof(Seq)}: {Seq}, {nameof(Up)}: {Up}, {nameof(Down)}: {Down}, {nameof(Right)}: {Right}, {nameof(Left)}: {Left}, {nameof(Space)}: {Space}";
+            return $"UserID {userID} {nameof(Seq)}: {Seq}, {nameof(Vertical)}: {Vertical}, {nameof(Horizontal)}: {Horizontal}";
         }
 
-        public Commands(int seq, int userID, bool up, bool down, bool right, bool left, bool space)
+        public Commands(int seq, int userID, float vertical, float horizontal)
         {
             this.seq = seq;
             this.userID = userID;
-            this.up = up;
-            this.down = down;
-            this.right = right;
-            this.left = left;
-            this.space = space;
+            this.vertical = vertical;
+            this.horizontal = horizontal;
         }
 
         public bool hasCommand()
         {
-            return up || down || right || left || space;
+            return Math.Abs(vertical) > 0 || Math.Abs(horizontal) > 0;
         }
 
         public int Seq => seq;
 
         public int UserID => userID;
         
-        public bool Up => up;
+        public float Vertical => vertical;
 
-        public bool Down => down;
-
-        public bool Right => right;
-
-        public bool Left => left;
-
-        public bool Space => space;
+        public float Horizontal => horizontal;
     }
 }

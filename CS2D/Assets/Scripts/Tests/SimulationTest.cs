@@ -153,33 +153,12 @@ public class SimulationTest : MonoBehaviour
     {
         CharacterController cubeCharacterCtrl = clients[commands.UserID].characterController;
         
-        float horizontalInput = Input.GetAxis("Horizontal");
-        float verticalInput = Input.GetAxis ("Vertical");
-        Vector3 dir = new Vector3();
+        Vector3 move = new Vector3();
+        Debug.Log(commands);
+        move.x += commands.Horizontal * Time.fixedDeltaTime;
+        move.z += commands.Vertical * Time.fixedDeltaTime;
 
-        if (commands.Space)
-        {
-            dir = new Vector3(0, 1, 0);
-            // cubeCharacterCtrl.Move();
-            // cube.AddForceAtPosition(Vector3.up * 5, Vector3.zero, ForceMode.Impulse);
-        }
-        if (commands.Left) {
-            dir = new Vector3(-1, 0, 0);
-            // cube.AddForceAtPosition(Vector3.left * 5, Vector3.zero, ForceMode.Impulse);
-        }
-        if (commands.Right) {
-            dir = new Vector3(1, 0, 0);
-            // cube.AddForceAtPosition(Vector3.right * 5, Vector3.zero, ForceMode.Impulse);
-        }
-        if (commands.Up) {
-            dir = new Vector3(0, 0, 1);
-            // cube.AddForceAtPosition(Vector3.forward * 5, Vector3.zero, ForceMode.Impulse);
-        }
-        if (commands.Down) {
-            dir = new Vector3(0, 0, -1);
-            // cube.AddForceAtPosition(Vector3.back * 5, Vector3.zero, ForceMode.Impulse);
-        }
-        cubeCharacterCtrl.Move(dir);
+        cubeCharacterCtrl.Move(move);
     }
 
     private void InstantiateClient(int userID, int sendPort, int recvPort)

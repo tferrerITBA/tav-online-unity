@@ -28,6 +28,7 @@ public class CubeClient : MonoBehaviour
     public GameObject playerCubePrefab;
 
     public Color clientColor;
+    public float speed = 5;
     
     public int interpolationCount = 2;
 
@@ -98,11 +99,13 @@ public class CubeClient : MonoBehaviour
         Commands currentCommands = new Commands(
             cmdSeq,
             userID,
-            Input.GetKeyDown(KeyCode.UpArrow),
+            Input.GetAxisRaw("Vertical"),
+            Input.GetAxisRaw("Horizontal")
+            /*Input.GetKeyDown(KeyCode.UpArrow),
             Input.GetKeyDown(KeyCode.DownArrow),
             Input.GetKeyDown(KeyCode.RightArrow),
             Input.GetKeyDown(KeyCode.LeftArrow),
-            Input.GetKeyDown(KeyCode.Space)
+            Input.GetKeyDown(KeyCode.Space)*/
         );
         
         if (currentCommands.hasCommand())

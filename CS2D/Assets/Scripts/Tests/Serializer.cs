@@ -136,11 +136,8 @@ public class Serializer
         {
             buffer.PutInt(commands.Seq);
             buffer.PutInt(commands.UserID);
-            buffer.PutInt(commands.Up ? 1 : 0);
-            buffer.PutInt(commands.Down ? 1 : 0);
-            buffer.PutInt(commands.Right ? 1 : 0);
-            buffer.PutInt(commands.Left ? 1 : 0);
-            buffer.PutInt(commands.Space ? 1 : 0);
+            buffer.PutFloat(commands.Vertical);
+            buffer.PutFloat(commands.Horizontal);
         }
     }
 
@@ -155,11 +152,9 @@ public class Serializer
             Commands commands = new Commands(
                 seq,
                 buffer.GetInt(),
-                buffer.GetInt() > 0,
-                buffer.GetInt() > 0,
-                buffer.GetInt() > 0,
-                buffer.GetInt() > 0,
-                buffer.GetInt() > 0);
+                buffer.GetFloat(),
+                buffer.GetFloat()
+            );
 
             totalCommands.Add(commands);
         }
