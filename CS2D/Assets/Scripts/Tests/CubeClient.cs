@@ -52,7 +52,7 @@ public class CubeClient : MonoBehaviour
             var buffer = packet.buffer;
             
             //deserialize
-            Serializer.ClientDeserialize(interpolationBuffer, playersToInstantiate, buffer, displaySeq, commands);
+            Serializer.ClientDeserialize(interpolationBuffer, playersToInstantiate, buffer, displaySeq, commands, cmdSeq);
             //networkSeq++;
         }
 

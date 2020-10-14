@@ -26,7 +26,7 @@ public class SimulationTest : MonoBehaviour
     private float accum = 0;
     private float serverTime = 0;
     private int seq = 0; // Next snapshot to send
-    private bool serverConnected;
+    private bool serverConnected = true;
 
     public CharacterController cubePrefab;
     public CubeClient clientPrefab;
@@ -41,7 +41,7 @@ public class SimulationTest : MonoBehaviour
     }
 
     // Update is called once per frame
-    void FixedUpdate() {
+    void Update() {
         if (Input.GetKeyDown(KeyCode.D))
         {
             serverConnected = !serverConnected;
@@ -82,10 +82,8 @@ public class SimulationTest : MonoBehaviour
         }
     }
 
-    private void UpdateServer()
+    private void FixedUpdate()
     {
-        serverTime += Time.deltaTime;
-
         foreach (var client in clients)
         {
             var cube = client.Value.characterController;
@@ -96,6 +94,20 @@ public class SimulationTest : MonoBehaviour
                 cube.SimpleMove(Vector3.zero);
             }
         }
+        foreach (var clientPair in clients)
+        {
+            var cli = clientPair.Value;
+            foreach (var commands in cli.pendingCommands)
+            {
+                ExecuteClientInput(commands);
+            }
+            cli.pendingCommands.Clear();
+        }
+    }
+
+    private void UpdateServer()
+    {
+        serverTime += Time.deltaTime;
 
         foreach (var cubeClientPair in clientManager.cubeClients)
         {
@@ -113,7 +125,9 @@ public class SimulationTest : MonoBehaviour
                 foreach (Commands commands in commandsList)
                 {
                     receivedCommandSequence = commands.Seq;
-                    ExecuteClientInput(commands);
+                    // Debug.Log($"rcvd {receivedCommandSequence} vs {clients[userID].cmdSeqReceived}");
+                    if (receivedCommandSequence > clients[userID].cmdSeqReceived)
+                        clients[userID].pendingCommands.Add(commands);
                 }
                 Serializer.ServerSerializeAck(packet.buffer, receivedCommandSequence);
                 packet.buffer.Flush();
@@ -154,7 +168,7 @@ public class SimulationTest : MonoBehaviour
         CharacterController cubeCharacterCtrl = clients[commands.UserID].characterController;
         
         Vector3 move = new Vector3();
-        Debug.Log(commands);
+        //Debug.Log(commands);
         move.x += commands.Horizontal * Time.fixedDeltaTime;
         move.z += commands.Vertical * Time.fixedDeltaTime;
 
