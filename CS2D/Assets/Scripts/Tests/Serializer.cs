@@ -42,11 +42,13 @@ public class Serializer
         playerJoined.InstantiateCubesPending = true;
     }
     
-    public static void ServerWorldSerialize(Dictionary<int, ServerClientInfo> clients, BitBuffer buffer, int seq, float time) {
+    public static void ServerWorldSerialize(Dictionary<int, ServerClientInfo> clients, BitBuffer buffer,
+        int seq, float time, int cmdSeq) {
         
         buffer.PutByte(UpdateMessage);
         buffer.PutInt(seq);
         buffer.PutFloat(time);
+        buffer.PutInt(cmdSeq);
         buffer.PutInt(clients.Count);
         
         foreach (var userRigidBodyPair in clients)
@@ -100,6 +102,7 @@ public class Serializer
     {
         var seq = buffer.GetInt();
         var time = buffer.GetFloat();
+        var cmdSeq = buffer.GetInt();
         var playerCount = buffer.GetInt();
 
         Dictionary<int, UserState> userStates = new Dictionary<int, UserState>();
@@ -123,7 +126,7 @@ public class Serializer
 
         if (seq < displaySeq) return;
 
-        Snapshot snapshot = new Snapshot(seq, time, userStates);
+        Snapshot snapshot = new Snapshot(seq, time, cmdSeq, userStates);
         for (i = 0; i < interpolationBuffer.Count; i++)
         {
             if(interpolationBuffer[i].Seq > seq)

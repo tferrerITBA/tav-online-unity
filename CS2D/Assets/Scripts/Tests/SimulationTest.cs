@@ -146,10 +146,13 @@ public class SimulationTest : MonoBehaviour
         {
             foreach (var cubeClientPair in clientManager.cubeClients)
             {
+                int userID = cubeClientPair.Key;
                 CubeClient cubeClient = cubeClientPair.Value;
-                //serialize
+                int lastCommandsReceived = clients[userID].cmdSeqReceived;
+                // Serialize snapshot
                 var packet = Packet.Obtain();
-                Serializer.ServerWorldSerialize(clients, packet.buffer, seq, serverTime);
+                Serializer.ServerWorldSerialize(clients, packet.buffer, seq,
+                    serverTime, lastCommandsReceived);
                 packet.buffer.Flush();
 
                 string serverIP = "127.0.0.1";
