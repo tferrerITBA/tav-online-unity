@@ -1,31 +1,26 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
-using System.Linq;
 using System.Net;
-using System.Numerics;
 using Tests;
 using UnityEngine;
-using UnityEngine.PlayerLoop;
-using UnityEngine.Serialization;
-using Random = System.Random;
 using Vector3 = UnityEngine.Vector3;
 
 public class SimulationTest : MonoBehaviour
 {
     private Dictionary<int, ServerClientInfo> clients = new Dictionary<int, ServerClientInfo>();
 
-    public const int PortsPerClient = 2;
+    private const int PortsPerClient = 2;
     public int sendBasePort = 9000;
     public int recvBasePort = 9001;
-    public int clientCount = 0;
+    public int clientCount;
     
     public int pps = 10;
     private float sendRate;
     
-    private float accum = 0;
-    private float serverTime = 0;
-    public int seq = 0; // Next snapshot to send
+    private float accum;
+    private float serverTime;
+    public int seq; // Next snapshot to send
     private bool serverConnected = true;
 
     public CharacterController cubePrefab;
@@ -89,7 +84,7 @@ public class SimulationTest : MonoBehaviour
             var cube = client.Value.characterController;
             if (!cube.isGrounded)
             {
-                Vector3 vel = new Vector3(0, gravity * Time.deltaTime, 0);
+                // Vector3 vel = new Vector3(0, gravity * Time.deltaTime, 0);
                 // cube.Move(vel * Time.deltaTime);
                 cube.SimpleMove(Vector3.zero);
             }

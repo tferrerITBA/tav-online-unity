@@ -1,6 +1,3 @@
-using System;
-using UnityEngine;
-
 namespace Tests
 {
     public class Commands

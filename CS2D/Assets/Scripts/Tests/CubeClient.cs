@@ -14,15 +14,14 @@ public class CubeClient : MonoBehaviour
     public Channel recvChannel;
 
     public int userID;
-    public int displaySeq = 0;
-    // public int cmdSeq = 1;
-    public float time = 0;
+    public int displaySeq;
+    public float time;
     public bool isPlaying;
-    public PlayerJoined playersToInstantiate = new PlayerJoined();
+    private PlayerJoined playersToInstantiate = new PlayerJoined();
 
-    private List<Snapshot> interpolationBuffer = new List<Snapshot>();
-    private List<Commands> commands = new List<Commands>();
-    private Dictionary<int, GameObject> cubes = new Dictionary<int, GameObject>();
+    private readonly List<Snapshot> interpolationBuffer = new List<Snapshot>();
+    private readonly List<Commands> commands = new List<Commands>();
+    private readonly Dictionary<int, GameObject> cubes = new Dictionary<int, GameObject>();
 
     public GameObject cubePrefab;
     public GameObject playerCubePrefab;
@@ -35,7 +34,7 @@ public class CubeClient : MonoBehaviour
     
     public int interpolationCount = 2;
 
-    private Commands _currentCommands;
+    private Commands currentCommands;
 
     public void Initialize(int sendPort, int recvPort, int userID, int cubesLayer)
     {
@@ -46,7 +45,7 @@ public class CubeClient : MonoBehaviour
         this.userID = userID;
         gameObject.layer = cubesLayer;
         clientColor = new Color(Random.value, Random.value, Random.value);
-        _currentCommands = new Commands(userID);
+        currentCommands = new Commands(userID);
     }
 
     private void Update()
@@ -56,11 +55,8 @@ public class CubeClient : MonoBehaviour
         if (packet != null)
         {
             var buffer = packet.buffer;
-            
-            //deserialize
             Serializer.ClientDeserialize(interpolationBuffer, playersToInstantiate, buffer,
-                displaySeq, commands, _currentCommands.Seq);
-            //networkSeq++;
+                displaySeq, commands, currentCommands.Seq);
         }
 
         ReadClientInput();
@@ -72,7 +68,6 @@ public class CubeClient : MonoBehaviour
         
         if (isPlaying)
         {
-            //accumCli += Time.deltaTime;
             time += Time.deltaTime;
 
             if (playersToInstantiate.InstantiateCubesPending)
@@ -89,7 +84,6 @@ public class CubeClient : MonoBehaviour
             var previousTime = interpolationBuffer[0].Time;
             var nextTime = interpolationBuffer[1].Time;
             if (time >= nextTime) {
-                //Debug.Log($"time {time} nextTime {nextTime}");
                 interpolationBuffer.RemoveAt(0);
                 displaySeq++;
                 if (interpolationBuffer.Count < 2)
@@ -107,10 +101,10 @@ public class CubeClient : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if (_currentCommands.HasCommand())
+        if (currentCommands.HasCommand())
         {
-            commands.Add(new Commands(_currentCommands));
-            MoveOwnCube(_currentCommands);
+            commands.Add(new Commands(currentCommands));
+            MoveOwnCube(currentCommands);
             //serialize
             var packet = Packet.Obtain();
             Serializer.ClientSerializeInput(commands, packet.buffer);
@@ -121,7 +115,7 @@ public class CubeClient : MonoBehaviour
             sendChannel.Send(packet, remoteEp);
             packet.Free();
 
-            _currentCommands.Seq++;
+            currentCommands.Seq++;
         }
     }
 
@@ -129,52 +123,52 @@ public class CubeClient : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.UpArrow))
         {
-            _currentCommands.Up = true;
+            currentCommands.Up = true;
         } else if (Input.GetKeyUp(KeyCode.UpArrow))
         {
-            _currentCommands.Up = false;
+            currentCommands.Up = false;
         }
         if (Input.GetKeyDown(KeyCode.DownArrow))
         {
-            _currentCommands.Down = true;
+            currentCommands.Down = true;
         } else if (Input.GetKeyUp(KeyCode.DownArrow))
         {
-            _currentCommands.Down = false;
+            currentCommands.Down = false;
         }
         if (Input.GetKeyDown(KeyCode.LeftArrow))
         {
-            _currentCommands.Left = true;
+            currentCommands.Left = true;
         } else if (Input.GetKeyUp(KeyCode.LeftArrow))
         {
-            _currentCommands.Left = false;
+            currentCommands.Left = false;
         }
         if (Input.GetKeyDown(KeyCode.RightArrow))
         {
-            _currentCommands.Right = true;
+            currentCommands.Right = true;
         } else if (Input.GetKeyUp(KeyCode.RightArrow))
         {
-            _currentCommands.Right = false;
+            currentCommands.Right = false;
         }
         if (Input.GetKeyDown(KeyCode.Space))
         {
-            _currentCommands.Space = true;
+            currentCommands.Space = true;
         } else if (Input.GetKeyUp(KeyCode.Space))
         {
-            _currentCommands.Space = false;
+            currentCommands.Space = false;
         }
     }
 
-    private void MoveOwnCube(Commands commands)
+    private void MoveOwnCube(Commands commandsToApply)
     {
         if (!ownCube.isGrounded)
         {
-            Vector3 vel = new Vector3(0, gravity * Time.deltaTime, 0);
+            // Vector3 vel = new Vector3(0, gravity * Time.deltaTime, 0);
             // cube.Move(vel * Time.deltaTime);
             ownCube.SimpleMove(Vector3.zero);
         }
         Vector3 move = new Vector3();
-        move.x += commands.GetXDirection() * Time.fixedDeltaTime;
-        move.z += commands.GetZDirection() * Time.fixedDeltaTime;
+        move.x += commandsToApply.GetXDirection() * Time.fixedDeltaTime;
+        move.z += commandsToApply.GetZDirection() * Time.fixedDeltaTime;
 
         ownCube.Move(move);
     }

@@ -20,8 +20,6 @@ public class ClientManager : MonoBehaviour
 
     //public SimulationTest tralala;
     
-    
-    // Start is called before the first frame update
     void Start()
     {
         playerJoinSendChannel = new Channel(playerJoinSendPort);
