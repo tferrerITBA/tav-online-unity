@@ -15,7 +15,7 @@ public class CubeClient : MonoBehaviour
 
     public int userID;
     public int displaySeq = 0;
-    public int cmdSeq = 1;
+    // public int cmdSeq = 1;
     public float time = 0;
     public bool isPlaying;
     public PlayerJoined playersToInstantiate = new PlayerJoined();
@@ -27,10 +27,15 @@ public class CubeClient : MonoBehaviour
     public GameObject cubePrefab;
     public GameObject playerCubePrefab;
 
+    public CharacterController ownCube;
+    public float gravity = -9.81f;
+
     public Color clientColor;
     public float speed = 5;
     
     public int interpolationCount = 2;
+
+    private Commands _currentCommands;
 
     public void Initialize(int sendPort, int recvPort, int userID, int cubesLayer)
     {
@@ -41,6 +46,7 @@ public class CubeClient : MonoBehaviour
         this.userID = userID;
         gameObject.layer = cubesLayer;
         clientColor = new Color(Random.value, Random.value, Random.value);
+        _currentCommands = new Commands(userID);
     }
 
     private void Update()
@@ -52,7 +58,8 @@ public class CubeClient : MonoBehaviour
             var buffer = packet.buffer;
             
             //deserialize
-            Serializer.ClientDeserialize(interpolationBuffer, playersToInstantiate, buffer, displaySeq, commands, cmdSeq);
+            Serializer.ClientDeserialize(interpolationBuffer, playersToInstantiate, buffer,
+                displaySeq, commands, _currentCommands.Seq);
             //networkSeq++;
         }
 
@@ -72,13 +79,17 @@ public class CubeClient : MonoBehaviour
             {
                 InstantiateCubes(playersToInstantiate);
                 playersToInstantiate.InstantiateCubesPending = false;
-                displaySeq = interpolationBuffer[0].Seq;
-                time = interpolationBuffer[0].Time;
+                if (displaySeq < interpolationBuffer[0].Seq)
+                {
+                    displaySeq = interpolationBuffer[0].Seq;
+                    time = interpolationBuffer[0].Time;
+                }
             }
 
             var previousTime = interpolationBuffer[0].Time;
             var nextTime = interpolationBuffer[1].Time;
             if (time >= nextTime) {
+                //Debug.Log($"time {time} nextTime {nextTime}");
                 interpolationBuffer.RemoveAt(0);
                 displaySeq++;
                 if (interpolationBuffer.Count < 2)
@@ -93,24 +104,13 @@ public class CubeClient : MonoBehaviour
             Interpolate(interpolationBuffer[0], interpolationBuffer[1], t);
         }
     }
-    
-    private void ReadClientInput()
+
+    private void FixedUpdate()
     {
-        Commands currentCommands = new Commands(
-            cmdSeq,
-            userID,
-            Input.GetAxisRaw("Vertical"),
-            Input.GetAxisRaw("Horizontal")
-            /*Input.GetKeyDown(KeyCode.UpArrow),
-            Input.GetKeyDown(KeyCode.DownArrow),
-            Input.GetKeyDown(KeyCode.RightArrow),
-            Input.GetKeyDown(KeyCode.LeftArrow),
-            Input.GetKeyDown(KeyCode.Space)*/
-        );
-        
-        if (currentCommands.hasCommand())
+        if (_currentCommands.HasCommand())
         {
-            commands.Add(currentCommands);
+            commands.Add(new Commands(_currentCommands));
+            MoveOwnCube(_currentCommands);
             //serialize
             var packet = Packet.Obtain();
             Serializer.ClientSerializeInput(commands, packet.buffer);
@@ -121,8 +121,67 @@ public class CubeClient : MonoBehaviour
             sendChannel.Send(packet, remoteEp);
             packet.Free();
 
-            cmdSeq++;
+            _currentCommands.Seq++;
         }
+        if (Input.GetKeyUp(KeyCode.UpArrow))
+        {
+            _currentCommands.Up = false;
+        }
+        if (Input.GetKeyUp(KeyCode.DownArrow))
+        {
+            _currentCommands.Down = false;
+        }
+        if (Input.GetKeyUp(KeyCode.LeftArrow))
+        {
+            _currentCommands.Left = false;
+        }
+        if (Input.GetKeyUp(KeyCode.RightArrow))
+        {
+            _currentCommands.Right = false;
+        }
+        if (Input.GetKeyUp(KeyCode.Space))
+        {
+            _currentCommands.Space = false;
+        }
+    }
+
+    private void ReadClientInput()
+    {
+        if (Input.GetKeyDown(KeyCode.UpArrow))
+        {
+            _currentCommands.Up = true;
+        }
+        if (Input.GetKeyDown(KeyCode.DownArrow))
+        {
+            _currentCommands.Down = true;
+        }
+        if (Input.GetKeyDown(KeyCode.LeftArrow))
+        {
+            _currentCommands.Left = true;
+        }
+        if (Input.GetKeyDown(KeyCode.RightArrow))
+        {
+            _currentCommands.Right = true;
+        }
+        if (Input.GetKeyDown(KeyCode.Space))
+        {
+            _currentCommands.Space = true;
+        }
+    }
+
+    private void MoveOwnCube(Commands commands)
+    {
+        if (!ownCube.isGrounded)
+        {
+            Vector3 vel = new Vector3(0, gravity * Time.deltaTime, 0);
+            // cube.Move(vel * Time.deltaTime);
+            ownCube.SimpleMove(Vector3.zero);
+        }
+        Vector3 move = new Vector3();
+        move.x += commands.GetXDirection() * Time.fixedDeltaTime;
+        move.z += commands.GetZDirection() * Time.fixedDeltaTime;
+
+        ownCube.Move(move);
     }
 
     private void InstantiateCubes(PlayerJoined playerJoined)
@@ -135,6 +194,7 @@ public class CubeClient : MonoBehaviour
                 if (userStatePair.Key == userID)
                 {
                     player = Instantiate(playerCubePrefab, transform);
+                    ownCube = player.GetComponent<CharacterController>();
                 }
                 else
                 {
@@ -160,7 +220,7 @@ public class CubeClient : MonoBehaviour
     {
         foreach (var userCubePair in cubes)
         {
-            if (!prevSnapshot.UserStates.ContainsKey(userCubePair.Key))
+            if (!prevSnapshot.UserStates.ContainsKey(userCubePair.Key) || userCubePair.Key == userID)
                 continue;
             
             var position = new Vector3();

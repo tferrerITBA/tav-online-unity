@@ -248,6 +248,7 @@ MonoBehaviour:
   recvBasePort: 9001
   clientCount: 0
   pps: 60
+  seq: 0
   cubePrefab: {fileID: -8134659851016212025, guid: 28cc0406fbd014feabdbff6672bc5930,
     type: 3}
   clientPrefab: {fileID: -8154457293400443776, guid: 7090adb39220a4c4b9e4113b0c5c42aa,
@@ -479,6 +480,7 @@ MonoBehaviour:
   playerJoinSendPort: 8998
   playerJoinRecvPort: 8999
   interpolationCount: 2
+  tralala: {fileID: 803758057}
 --- !u!4 &1413299847
 Transform:
   m_ObjectHideFlags: 0

@@ -25,7 +25,7 @@ public class SimulationTest : MonoBehaviour
     
     private float accum = 0;
     private float serverTime = 0;
-    private int seq = 0; // Next snapshot to send
+    public int seq = 0; // Next snapshot to send
     private bool serverConnected = true;
 
     public CharacterController cubePrefab;
@@ -109,6 +109,12 @@ public class SimulationTest : MonoBehaviour
     {
         serverTime += Time.deltaTime;
 
+        /*string str = "";
+        foreach (var cli in clientManager.cubeClients)
+        {
+            str += $"{cli.Value.userID} ";
+        }
+        Debug.Log(str);*/
         foreach (var cubeClientPair in clientManager.cubeClients)
         {
             int userID = cubeClientPair.Key;
@@ -169,8 +175,8 @@ public class SimulationTest : MonoBehaviour
         
         Vector3 move = new Vector3();
         //Debug.Log(commands);
-        move.x += commands.Horizontal * Time.fixedDeltaTime;
-        move.z += commands.Vertical * Time.fixedDeltaTime;
+        move.x += commands.GetXDirection() * Time.fixedDeltaTime;
+        move.z += commands.GetZDirection() * Time.fixedDeltaTime;
 
         cubeCharacterCtrl.Move(move);
     }

@@ -7,13 +7,12 @@ public class ServerClientInfo
 {
     public int userID;
     public int cmdSeqReceived;
-    public List<Commands> pendingCommands;
+    public List<Commands> pendingCommands = new List<Commands>();
     public CharacterController characterController;
 
     public ServerClientInfo(int userID, CharacterController characterController)
     {
         this.userID = userID;
         this.characterController = characterController;
-        this.pendingCommands = new List<Commands>();
     }
 }

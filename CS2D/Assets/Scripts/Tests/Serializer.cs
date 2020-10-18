@@ -67,12 +67,12 @@ public class Serializer
     }
 
     public static void ClientDeserialize(List<Snapshot> interpolationBuffer, PlayerJoined playerJoined, BitBuffer buffer,
-        int seqCli, List<Commands> clientCommands, int cmdSeq) {
+        int displaySeq, List<Commands> clientCommands, int cmdSeq) {
         var messageType = buffer.GetByte();
 
         if (messageType == UpdateMessage)
         {
-            ClientDeserializeUpdate(interpolationBuffer, buffer, seqCli);
+            ClientDeserializeUpdate(interpolationBuffer, buffer, displaySeq);
         }
         else if (messageType == PlayerJoined)
         {
@@ -81,11 +81,11 @@ public class Serializer
         else if (messageType == CommandsAckMessage)
         {
             int receivedAckSequence = ClientDeserializeAck(buffer);
-            int lastAckedCommandsIndex = 0;
+            int lastAckedCommandsIndex = 1;
             // Debug.Log($"ANTES {clientCommands.Count}");
             foreach (var commands in clientCommands)
             {
-                if (cmdSeq - 1 > receivedAckSequence)
+                if (cmdSeq > receivedAckSequence)
                 {
                     break;
                 }
@@ -96,7 +96,7 @@ public class Serializer
         }
     }
 
-    private static void ClientDeserializeUpdate(List<Snapshot> interpolationBuffer, BitBuffer buffer, int seqCli)
+    private static void ClientDeserializeUpdate(List<Snapshot> interpolationBuffer, BitBuffer buffer, int displaySeq)
     {
         var seq = buffer.GetInt();
         var time = buffer.GetFloat();
@@ -121,7 +121,7 @@ public class Serializer
             userStates.Add(userID, new UserState(position, rotation));
         }
 
-        if (seq < seqCli) return;
+        if (seq < displaySeq) return;
 
         Snapshot snapshot = new Snapshot(seq, time, userStates);
         for (i = 0; i < interpolationBuffer.Count; i++)
@@ -138,8 +138,11 @@ public class Serializer
         {
             buffer.PutInt(commands.Seq);
             buffer.PutInt(commands.UserID);
-            buffer.PutFloat(commands.Vertical);
-            buffer.PutFloat(commands.Horizontal);
+            buffer.PutInt(commands.Up ? 1 : 0);
+            buffer.PutInt(commands.Down ? 1 : 0);
+            buffer.PutInt(commands.Left ? 1 : 0);
+            buffer.PutInt(commands.Right ? 1 : 0);
+            buffer.PutInt(commands.Space ? 1 : 0);
         }
     }
 
@@ -154,8 +157,11 @@ public class Serializer
             Commands commands = new Commands(
                 seq,
                 buffer.GetInt(),
-                buffer.GetFloat(),
-                buffer.GetFloat()
+                buffer.GetInt() > 0,
+                buffer.GetInt() > 0,
+                buffer.GetInt() > 0,
+                buffer.GetInt() > 0,
+                buffer.GetInt() > 0
             );
 
             totalCommands.Add(commands);
