@@ -123,26 +123,6 @@ public class CubeClient : MonoBehaviour
 
             _currentCommands.Seq++;
         }
-        if (Input.GetKeyUp(KeyCode.UpArrow))
-        {
-            _currentCommands.Up = false;
-        }
-        if (Input.GetKeyUp(KeyCode.DownArrow))
-        {
-            _currentCommands.Down = false;
-        }
-        if (Input.GetKeyUp(KeyCode.LeftArrow))
-        {
-            _currentCommands.Left = false;
-        }
-        if (Input.GetKeyUp(KeyCode.RightArrow))
-        {
-            _currentCommands.Right = false;
-        }
-        if (Input.GetKeyUp(KeyCode.Space))
-        {
-            _currentCommands.Space = false;
-        }
     }
 
     private void ReadClientInput()
@@ -150,22 +130,37 @@ public class CubeClient : MonoBehaviour
         if (Input.GetKeyDown(KeyCode.UpArrow))
         {
             _currentCommands.Up = true;
+        } else if (Input.GetKeyUp(KeyCode.UpArrow))
+        {
+            _currentCommands.Up = false;
         }
         if (Input.GetKeyDown(KeyCode.DownArrow))
         {
             _currentCommands.Down = true;
+        } else if (Input.GetKeyUp(KeyCode.DownArrow))
+        {
+            _currentCommands.Down = false;
         }
         if (Input.GetKeyDown(KeyCode.LeftArrow))
         {
             _currentCommands.Left = true;
+        } else if (Input.GetKeyUp(KeyCode.LeftArrow))
+        {
+            _currentCommands.Left = false;
         }
         if (Input.GetKeyDown(KeyCode.RightArrow))
         {
             _currentCommands.Right = true;
+        } else if (Input.GetKeyUp(KeyCode.RightArrow))
+        {
+            _currentCommands.Right = false;
         }
         if (Input.GetKeyDown(KeyCode.Space))
         {
             _currentCommands.Space = true;
+        } else if (Input.GetKeyUp(KeyCode.Space))
+        {
+            _currentCommands.Space = false;
         }
     }
 
