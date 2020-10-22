@@ -69,7 +69,7 @@ public class Serializer
     }
 
     public static void ClientDeserialize(List<Snapshot> interpolationBuffer, PlayerJoined playerJoined, BitBuffer buffer,
-        int displaySeq, List<Commands> clientCommands, int cmdSeq) {
+        int displaySeq, CommandsList clientCommands, int cmdSeq) {
         var messageType = buffer.GetByte();
 
         if (messageType == UpdateMessage)
@@ -83,9 +83,11 @@ public class Serializer
         else if (messageType == CommandsAckMessage)
         {
             int receivedAckSequence = ClientDeserializeAck(buffer);
-            int lastAckedCommandsIndex = 1;
+            clientCommands.Ack(receivedAckSequence);
+            // int lastAckedCommandsIndex = 1;
+            
             // Debug.Log($"ANTES {clientCommands.Count}");
-            foreach (var commands in clientCommands)
+            /*foreach (var commands in clientCommands)
             {
                 if (cmdSeq > receivedAckSequence)
                 {
@@ -94,7 +96,7 @@ public class Serializer
                 lastAckedCommandsIndex++;
             }
             // Debug.Log($"DSPS {clientCommands.Count} cmdSeq {cmdSeq} {receivedAckSequence}");
-            clientCommands.RemoveRange(0, lastAckedCommandsIndex);
+            clientCommands.RemoveRange(0, lastAckedCommandsIndex);*/
         }
     }
 
@@ -135,9 +137,9 @@ public class Serializer
         interpolationBuffer.Insert(i, snapshot);
     }
 
-    public static void ClientSerializeInput(List<Commands> clientCommands, BitBuffer buffer)
+    public static void ClientSerializeInput(CommandsList clientCommands, BitBuffer buffer)
     {
-        foreach (Commands commands in clientCommands)
+        foreach (Commands commands in clientCommands.GetUnackedCommands())
         {
             buffer.PutInt(commands.Seq);
             buffer.PutInt(commands.UserID);

@@ -6,32 +6,31 @@ using UnityEngine;
 
 public class CommandsList
 {
-    private List<Commands> commands = new List<Commands>();
-    public int ackedCount;
-    public int snapshotAckedCount;
+    private readonly List<Commands> commands = new List<Commands>();
+    public int ackedIndex = -1;
+    public int snapshotAckedIndex = -1;
 
     public void ClearAcked()
     {
-        int minAckedCount = Math.Min(ackedCount, snapshotAckedCount);
-        if (ackedCount > snapshotAckedCount) 
-            Debug.Log($"ack: {ackedCount} snapack {snapshotAckedCount} count {commands.Count}");
-        commands.RemoveRange(0, minAckedCount);
-        ackedCount -= minAckedCount;
-        snapshotAckedCount -= minAckedCount;
+        commands.RemoveRange(0, ackedIndex + 1);
+        ackedIndex = -1;
     }
 
     public List<Commands> GetUnackedCommands()
     {
-        if (ackedCount == 0)
+        if (ackedIndex < 0)
             return commands;
-        return commands.GetRange(ackedCount, commands.Count - ackedCount);
+
+        return commands.GetRange(ackedIndex + 1, commands.Count - ackedIndex - 1);
     }
 
     public List<Commands> GetSnapshotUnackedCommands()
     {
-        if (snapshotAckedCount == 0)
+        if (snapshotAckedIndex < 0)
             return commands;
-        return commands.GetRange(snapshotAckedCount, commands.Count - snapshotAckedCount);
+        if (snapshotAckedIndex >= commands.Count)
+            return new List<Commands>();
+        return commands.GetRange(snapshotAckedIndex + 1, commands.Count - snapshotAckedIndex - 1);
     }
 
     public void Add(Commands newCommands)
@@ -46,32 +45,27 @@ public class CommandsList
 
     public void Ack(int receivedAckSequence)
     {
-        foreach (var cmds in commands)
+        foreach (var cmd in commands)
         {
-            if (cmds.Seq > receivedAckSequence)
+            if (cmd.Seq > receivedAckSequence)
             {
                 break;
             }
-            ackedCount++;
+            ackedIndex++;
         }
         ClearAcked();
     }
 
     public void SnapshotAck(int receivedAckSequence)
     {
-        foreach (var cmds in commands)
+        foreach (var cmd in commands)
         {
-            if (cmds.Seq > receivedAckSequence)
+            if (cmd.Seq > receivedAckSequence)
             {
                 break;
             }
-            snapshotAckedCount++;
+            snapshotAckedIndex++;
         }
-        ClearAcked();
-    }
-
-    public override string ToString()
-    {
-        return $"Count: {commands.Count} Acked: {ackedCount} SnapshotAcked: {snapshotAckedCount}";
+        // ClearAcked();
     }
 }

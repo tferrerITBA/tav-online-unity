@@ -20,7 +20,7 @@ public class CubeClient : MonoBehaviour
     private PlayerJoined playersToInstantiate = new PlayerJoined();
 
     private readonly List<Snapshot> interpolationBuffer = new List<Snapshot>();
-    private readonly List<Commands> commands = new List<Commands>();
+    private readonly CommandsList commands = new CommandsList();
     private readonly Dictionary<int, GameObject> cubes = new Dictionary<int, GameObject>();
 
     public GameObject cubePrefab;
