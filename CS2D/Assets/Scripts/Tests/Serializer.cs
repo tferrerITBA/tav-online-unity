@@ -74,7 +74,7 @@ public class Serializer
 
         if (messageType == UpdateMessage)
         {
-            ClientDeserializeUpdate(interpolationBuffer, buffer, displaySeq);
+            ClientDeserializeUpdate(interpolationBuffer, buffer, displaySeq, clientCommands);
         }
         else if (messageType == PlayerJoined)
         {
@@ -100,7 +100,8 @@ public class Serializer
         }
     }
 
-    private static void ClientDeserializeUpdate(List<Snapshot> interpolationBuffer, BitBuffer buffer, int displaySeq)
+    private static void ClientDeserializeUpdate(List<Snapshot> interpolationBuffer, BitBuffer buffer,
+        int displaySeq, CommandsList clientCommands)
     {
         var seq = buffer.GetInt();
         var time = buffer.GetFloat();
@@ -127,6 +128,8 @@ public class Serializer
         }
 
         if (seq < displaySeq) return;
+        
+        clientCommands.SnapshotAck(cmdSeq);
 
         Snapshot snapshot = new Snapshot(seq, time, cmdSeq, userStates);
         for (i = 0; i < interpolationBuffer.Count; i++)
