@@ -122,15 +122,18 @@ public class SimulationTest : MonoBehaviour
                 List<Commands> commandsList = Serializer.ServerDeserializeInput(buffer);
 
                 var packet = Packet.Obtain();
-                int receivedCommandSequence = -1;
+                int receivedCommandSequence = 0;
                 foreach (Commands commands in commandsList)
                 {
                     receivedCommandSequence = commands.Seq;
                     // Debug.Log($"rcvd {receivedCommandSequence} vs {clients[userID].cmdSeqReceived}");
                     if (receivedCommandSequence > clients[userID].cmdSeqReceived)
+                    {
                         clients[userID].pendingCommands.Add(commands);
+                        clients[userID].cmdSeqReceived = receivedCommandSequence;
+                    }
                 }
-                Serializer.ServerSerializeAck(packet.buffer, receivedCommandSequence);
+                Serializer.ServerSerializeAck(packet.buffer, clients[userID].cmdSeqReceived);
                 packet.buffer.Flush();
 
                 string serverIP = "127.0.0.1";
@@ -138,18 +141,19 @@ public class SimulationTest : MonoBehaviour
                 cubeClient.recvChannel.Send(packet, remoteEp);
 
                 packet.Free();
-
-                clients[userID].cmdSeqReceived = receivedCommandSequence;
             }
         }
         if (accum >= sendRate)
         {
             foreach (var cubeClientPair in clientManager.cubeClients)
             {
+                int userID = cubeClientPair.Key;
                 CubeClient cubeClient = cubeClientPair.Value;
-                //serialize
+                int lastCommandsReceived = clients[userID].cmdSeqReceived;
+                // Serialize snapshot
                 var packet = Packet.Obtain();
-                Serializer.ServerWorldSerialize(clients, packet.buffer, seq, serverTime);
+                Serializer.ServerWorldSerialize(clients, packet.buffer, seq,
+                    serverTime, lastCommandsReceived);
                 packet.buffer.Flush();
 
                 string serverIP = "127.0.0.1";
