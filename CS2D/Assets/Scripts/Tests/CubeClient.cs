@@ -27,6 +27,7 @@ public class CubeClient : MonoBehaviour
     public GameObject playerCubePrefab;
 
     public CharacterController ownCube;
+    public CharacterController predictionCube;
     public float gravity = -9.81f;
 
     public Color clientColor;
@@ -184,6 +185,11 @@ public class CubeClient : MonoBehaviour
                 {
                     player = Instantiate(playerCubePrefab, transform);
                     ownCube = player.GetComponent<CharacterController>();
+                    var simulationCube = Instantiate(playerCubePrefab, transform);
+                    simulationCube.GetComponent<MeshRenderer>().enabled = false;
+                    predictionCube = simulationCube.GetComponent<CharacterController>();
+                    predictionCube.detectCollisions = false;
+                    predictionCube.gameObject.layer = gameObject.layer;
                 }
                 else
                 {

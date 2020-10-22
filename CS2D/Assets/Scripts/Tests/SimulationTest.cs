@@ -122,7 +122,7 @@ public class SimulationTest : MonoBehaviour
                 List<Commands> commandsList = Serializer.ServerDeserializeInput(buffer);
 
                 var packet = Packet.Obtain();
-                int receivedCommandSequence = -1;
+                int receivedCommandSequence = 0;
                 foreach (Commands commands in commandsList)
                 {
                     receivedCommandSequence = commands.Seq;
