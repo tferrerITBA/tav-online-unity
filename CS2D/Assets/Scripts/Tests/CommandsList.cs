@@ -12,6 +12,7 @@ public class CommandsList
 
     public void ClearAcked()
     {
+        return;
         commands.RemoveRange(0, ackedIndex + 1);
         ackedIndex = -1;
     }
@@ -21,6 +22,12 @@ public class CommandsList
         if (ackedIndex < 0)
             return commands;
 
+        if (commands.Count < ackedIndex + 1)
+        {
+            Debug.Log(commands.Count);
+            return new List<Commands>(0);
+        }
+           
         return commands.GetRange(ackedIndex + 1, commands.Count - ackedIndex - 1);
     }
 
@@ -28,8 +35,11 @@ public class CommandsList
     {
         if (snapshotAckedIndex < 0)
             return commands;
-        if (snapshotAckedIndex >= commands.Count)
-            return new List<Commands>();
+        if (commands.Count < snapshotAckedIndex + 1)
+        {
+            Debug.Log(commands.Count);
+            return new List<Commands>(0);
+        }
         return commands.GetRange(snapshotAckedIndex + 1, commands.Count - snapshotAckedIndex - 1);
     }
 

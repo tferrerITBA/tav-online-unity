@@ -128,9 +128,12 @@ public class SimulationTest : MonoBehaviour
                     receivedCommandSequence = commands.Seq;
                     // Debug.Log($"rcvd {receivedCommandSequence} vs {clients[userID].cmdSeqReceived}");
                     if (receivedCommandSequence > clients[userID].cmdSeqReceived)
+                    {
                         clients[userID].pendingCommands.Add(commands);
+                        clients[userID].cmdSeqReceived = receivedCommandSequence;
+                    }
                 }
-                Serializer.ServerSerializeAck(packet.buffer, receivedCommandSequence);
+                Serializer.ServerSerializeAck(packet.buffer, clients[userID].cmdSeqReceived);
                 packet.buffer.Flush();
 
                 string serverIP = "127.0.0.1";
@@ -138,8 +141,6 @@ public class SimulationTest : MonoBehaviour
                 cubeClient.recvChannel.Send(packet, remoteEp);
 
                 packet.Free();
-
-                clients[userID].cmdSeqReceived = receivedCommandSequence;
             }
         }
         if (accum >= sendRate)
