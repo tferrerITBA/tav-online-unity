@@ -24,7 +24,6 @@ public class CommandsList
 
         if (commands.Count < ackedIndex + 1)
         {
-            Debug.Log(commands.Count);
             return new List<Commands>(0);
         }
            
@@ -55,8 +54,9 @@ public class CommandsList
 
     public void Ack(int receivedAckSequence)
     {
-        foreach (var cmd in commands)
+        for(int i = ackedIndex + 1; i < commands.Count; i++)
         {
+            var cmd = commands[i];
             if (cmd.Seq > receivedAckSequence)
             {
                 break;
@@ -68,8 +68,9 @@ public class CommandsList
 
     public void SnapshotAck(int receivedAckSequence)
     {
-        foreach (var cmd in commands)
+        for(int i = snapshotAckedIndex + 1; i < commands.Count; i++)
         {
+            var cmd = commands[i];
             if (cmd.Seq > receivedAckSequence)
             {
                 break;
