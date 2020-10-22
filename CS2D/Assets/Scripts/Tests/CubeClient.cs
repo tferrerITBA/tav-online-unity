@@ -27,7 +27,6 @@ public class CubeClient : MonoBehaviour
     public GameObject playerCubePrefab;
 
     public CharacterController ownCube;
-    public CharacterController predictionCube;
     public float gravity = -9.81f;
 
     public Color clientColor;
@@ -56,8 +55,12 @@ public class CubeClient : MonoBehaviour
         if (packet != null)
         {
             var buffer = packet.buffer;
-            Serializer.ClientDeserialize(interpolationBuffer, playersToInstantiate, buffer,
+            var pt = Serializer.ClientDeserialize(interpolationBuffer, playersToInstantiate, buffer,
                 displaySeq, commands, currentCommands.Seq);
+            if (pt == PacketType.UPDATE_MESSAGE && ownCube) // a Snapshot was just received
+            {
+                CorrectPosition(interpolationBuffer[interpolationBuffer.Count - 1].UserStates[userID]);
+            }
         }
 
         ReadClientInput();
@@ -173,6 +176,24 @@ public class CubeClient : MonoBehaviour
 
         ownCube.Move(move);
     }
+    
+    private void CorrectPosition(UserState userState)
+    {
+        ownCube.transform.position = userState.Position;
+        foreach (var cmd in commands.GetSnapshotUnackedCommands())
+        {
+            if (!ownCube.isGrounded)
+                ownCube.SimpleMove(Vector3.zero);
+            
+            Vector3 move = new Vector3(
+                cmd.GetXDirection() * Time.fixedDeltaTime, 
+                0,
+                cmd.GetZDirection() * Time.fixedDeltaTime
+            );
+
+            ownCube.Move(move);
+        }
+    }
 
     private void InstantiateCubes(PlayerJoined playerJoined)
     {
@@ -185,11 +206,6 @@ public class CubeClient : MonoBehaviour
                 {
                     player = Instantiate(playerCubePrefab, transform);
                     ownCube = player.GetComponent<CharacterController>();
-                    var simulationCube = Instantiate(playerCubePrefab, transform);
-                    simulationCube.GetComponent<MeshRenderer>().enabled = false;
-                    predictionCube = simulationCube.GetComponent<CharacterController>();
-                    predictionCube.detectCollisions = false;
-                    predictionCube.gameObject.layer = gameObject.layer;
                 }
                 else
                 {
@@ -242,7 +258,7 @@ public class CubeClient : MonoBehaviour
     {
         return currentSnapValue + (nextSnapValue - currentSnapValue) * t;
     }
-    
+
     private void OnDestroy() {
         sendChannel.Disconnect();
         recvChannel.Disconnect();

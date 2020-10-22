@@ -4,17 +4,21 @@ using System.Linq;
 using Tests;
 using UnityEngine;
 
+public enum PacketType
+{
+    PLAYER_CONNECT = 24,
+    PLAYER_JOINED = 25,
+    PLAYER_DISCONNECT = 35,
+    COMMANDS_ACK_MESSAGE = 0,
+    UPDATE_MESSAGE = 1
+}
+
 public class Serializer
 {
-    private const int PlayerConnect = 24;
-    private const int PlayerJoined = 25;
-    private const int PlayerDisconnect = 35;
-    private const int CommandsAckMessage = 0;
-    private const int UpdateMessage = 1;
 
     public static void PlayerConnectSerialize(BitBuffer buffer, int userID)
     {
-        buffer.PutByte(PlayerConnect);
+        buffer.PutByte((byte)PacketType.PLAYER_CONNECT);
         buffer.PutInt(userID);
     }
 
@@ -26,7 +30,7 @@ public class Serializer
 
     public static void PlayerJoinedSerialize(BitBuffer buffer, PlayerJoined playerJoined)// , int sendPort, int recvPort)
     {
-        buffer.PutByte(PlayerJoined);
+        buffer.PutByte((byte)PacketType.PLAYER_JOINED);
         buffer.PutInt(playerJoined.UserID);
         buffer.PutInt(playerJoined.PlayerCount);
         buffer.PutInt(playerJoined.Seq);
@@ -45,7 +49,7 @@ public class Serializer
     public static void ServerWorldSerialize(Dictionary<int, ServerClientInfo> clients, BitBuffer buffer,
         int seq, float time, int cmdSeq) {
         
-        buffer.PutByte(UpdateMessage);
+        buffer.PutByte((byte)PacketType.UPDATE_MESSAGE);
         buffer.PutInt(seq);
         buffer.PutFloat(time);
         buffer.PutInt(cmdSeq);
@@ -68,36 +72,28 @@ public class Serializer
         }
     }
 
-    public static void ClientDeserialize(List<Snapshot> interpolationBuffer, PlayerJoined playerJoined, BitBuffer buffer,
+    public static PacketType ClientDeserialize(List<Snapshot> interpolationBuffer, PlayerJoined playerJoined, BitBuffer buffer,
         int displaySeq, CommandsList clientCommands, int cmdSeq) {
         var messageType = buffer.GetByte();
 
-        if (messageType == UpdateMessage)
+        if (messageType == (byte)PacketType.UPDATE_MESSAGE)
         {
             ClientDeserializeUpdate(interpolationBuffer, buffer, displaySeq, clientCommands);
+            return PacketType.UPDATE_MESSAGE;
         }
-        else if (messageType == PlayerJoined)
+        else if (messageType == (byte)PacketType.PLAYER_JOINED)
         {
             PlayerJoinedDeserialize(playerJoined, buffer);
+            return PacketType.PLAYER_JOINED;
         }
-        else if (messageType == CommandsAckMessage)
+        else if (messageType == (byte)PacketType.COMMANDS_ACK_MESSAGE)
         {
             int receivedAckSequence = ClientDeserializeAck(buffer);
             clientCommands.Ack(receivedAckSequence);
-            // int lastAckedCommandsIndex = 1;
-            
-            // Debug.Log($"ANTES {clientCommands.Count}");
-            /*foreach (var commands in clientCommands)
-            {
-                if (cmdSeq > receivedAckSequence)
-                {
-                    break;
-                }
-                lastAckedCommandsIndex++;
-            }
-            // Debug.Log($"DSPS {clientCommands.Count} cmdSeq {cmdSeq} {receivedAckSequence}");
-            clientCommands.RemoveRange(0, lastAckedCommandsIndex);*/
+            return PacketType.COMMANDS_ACK_MESSAGE;
         }
+
+        return PacketType.PLAYER_DISCONNECT;
     }
 
     private static void ClientDeserializeUpdate(List<Snapshot> interpolationBuffer, BitBuffer buffer,
@@ -180,7 +176,7 @@ public class Serializer
 
     public static void ServerSerializeAck(BitBuffer buffer, int commandSequence)
     {
-        buffer.PutByte(CommandsAckMessage);
+        buffer.PutByte((byte)PacketType.COMMANDS_ACK_MESSAGE);
         buffer.PutInt(commandSequence);
     }
     
