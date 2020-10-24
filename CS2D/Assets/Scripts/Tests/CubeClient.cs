@@ -215,6 +215,13 @@ public class CubeClient : MonoBehaviour
                 Renderer rndr = player.GetComponent<Renderer>();
                 rndr.material.color = clientColor;
                 cubes.Add(userStatePair.Key, player);
+                if (playerJoined.PlayerCount == 1)
+                {
+                    var cam = GameObject.FindGameObjectWithTag("MainCamera").transform;
+                    cam.SetParent(ownCube.transform);
+                    cam.localPosition = new Vector3(0, 1, 0);
+                    cam.localRotation = Quaternion.identity;
+                }
             }
         }
         else // just instantiate the new player
