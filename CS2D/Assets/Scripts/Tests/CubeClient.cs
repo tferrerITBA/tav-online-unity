@@ -221,6 +221,7 @@ public class CubeClient : MonoBehaviour
                     cam.SetParent(ownCube.transform);
                     cam.localPosition = new Vector3(0, 1, 0);
                     cam.localRotation = Quaternion.identity;
+                    cam.GetComponent<MouseLook>().player = ownCube.transform;
                 }
             }
         }
