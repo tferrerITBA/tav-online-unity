@@ -105,22 +105,26 @@ public class CubeClient : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if (currentCommands.HasCommand())
-        {
-            commands.Add(new Commands(currentCommands));
-            MoveOwnCube(currentCommands);
-            //serialize
-            var packet = Packet.Obtain();
-            Serializer.ClientSerializeInput(commands, packet.buffer);
-            packet.buffer.Flush();
+        if (!ownCube)
+            return;
+        // if (currentCommands.HasCommand())
+        // {
+        
+        // put rotation in currentCommands
+        commands.Add(new Commands(currentCommands));
+        MoveOwnCube(currentCommands);
+        //serialize
+        var packet = Packet.Obtain();
+        Serializer.ClientSerializeInput(commands, packet.buffer);
+        packet.buffer.Flush();
 
-            string serverIP = "127.0.0.1";
-            var remoteEp = new IPEndPoint(IPAddress.Parse(serverIP), sendPort);
-            sendChannel.Send(packet, remoteEp);
-            packet.Free();
+        string serverIP = "127.0.0.1";
+        var remoteEp = new IPEndPoint(IPAddress.Parse(serverIP), sendPort);
+        sendChannel.Send(packet, remoteEp);
+        packet.Free();
 
-            currentCommands.Seq++;
-        }
+        currentCommands.Seq++;
+        // }
     }
 
     private void ReadClientInput()
@@ -174,11 +178,13 @@ public class CubeClient : MonoBehaviour
         move.x += commandsToApply.GetXDirection() * Time.fixedDeltaTime;
         move.z += commandsToApply.GetZDirection() * Time.fixedDeltaTime;
 
+        move = GameObject.FindGameObjectWithTag("MainCamera").transform.TransformDirection(move);
         ownCube.Move(move);
     }
     
     private void CorrectPosition(UserState userState)
     {
+        return;
         ownCube.transform.position = userState.Position;
         foreach (var cmd in commands.GetSnapshotUnackedCommands())
         {
