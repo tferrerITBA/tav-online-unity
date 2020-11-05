@@ -179,6 +179,8 @@ public class SimulationTest : MonoBehaviour
         move.x += commands.GetXDirection() * Time.fixedDeltaTime;
         move.z += commands.GetZDirection() * Time.fixedDeltaTime;
 
+        cubeCharacterCtrl.transform.rotation = Quaternion.Euler(0, commands.Rotation, 0);
+        move = cubeCharacterCtrl.transform.TransformDirection(move);
         cubeCharacterCtrl.Move(move);
     }
 

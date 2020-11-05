@@ -111,8 +111,8 @@ public class CubeClient : MonoBehaviour
             return;
         // if (currentCommands.HasCommand())
         // {
-        
-        // put rotation in currentCommands
+
+        currentCommands.Rotation = ownCube.transform.rotation.eulerAngles.y;
         commands.Add(new Commands(currentCommands));
         MoveOwnCube(currentCommands);
         //serialize
@@ -180,13 +180,12 @@ public class CubeClient : MonoBehaviour
         move.x += commandsToApply.GetXDirection() * Time.fixedDeltaTime;
         move.z += commandsToApply.GetZDirection() * Time.fixedDeltaTime;
 
-        move = GameObject.FindGameObjectWithTag("MainCamera").transform.TransformDirection(move);
+        move = ownCube.transform.TransformDirection(move);
         ownCube.Move(move);
     }
     
     private void CorrectPosition(UserState userState)
     {
-        return;
         ownCube.transform.position = userState.Position;
         foreach (var cmd in commands.GetSnapshotUnackedCommands())
         {

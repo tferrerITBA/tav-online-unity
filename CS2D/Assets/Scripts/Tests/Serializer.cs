@@ -147,6 +147,7 @@ public class Serializer
             buffer.PutInt(commands.Left ? 1 : 0);
             buffer.PutInt(commands.Right ? 1 : 0);
             buffer.PutInt(commands.Space ? 1 : 0);
+            buffer.PutFloat(commands.Rotation);
         }
     }
 
@@ -165,7 +166,8 @@ public class Serializer
                 buffer.GetInt() > 0,
                 buffer.GetInt() > 0,
                 buffer.GetInt() > 0,
-                buffer.GetInt() > 0
+                buffer.GetInt() > 0,
+                buffer.GetFloat()
             );
 
             totalCommands.Add(commands);
