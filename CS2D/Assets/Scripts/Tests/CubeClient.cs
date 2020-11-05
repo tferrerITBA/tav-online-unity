@@ -52,7 +52,7 @@ public class CubeClient : MonoBehaviour
     {
         var packet = recvChannel.GetPacket();
 
-        if (packet != null)
+        while (packet != null)
         {
             var buffer = packet.buffer;
             var pt = Serializer.ClientDeserialize(interpolationBuffer, playersToInstantiate, buffer,
@@ -61,6 +61,8 @@ public class CubeClient : MonoBehaviour
             {
                 CorrectPosition(interpolationBuffer[interpolationBuffer.Count - 1].UserStates[userID]);
             }
+            
+            packet = recvChannel.GetPacket();
         }
 
         ReadClientInput();

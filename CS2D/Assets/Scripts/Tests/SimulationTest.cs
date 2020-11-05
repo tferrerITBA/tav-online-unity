@@ -116,16 +116,16 @@ public class SimulationTest : MonoBehaviour
             CubeClient cubeClient = cubeClientPair.Value;
             var commandPacket = cubeClient.sendChannel.GetPacket();
             
-            if (commandPacket != null) {
+            while (commandPacket != null) {
                 var buffer = commandPacket.buffer;
 
                 List<Commands> commandsList = Serializer.ServerDeserializeInput(buffer);
 
                 var packet = Packet.Obtain();
-                int receivedCommandSequence = 0;
+                
                 foreach (Commands commands in commandsList)
                 {
-                    receivedCommandSequence = commands.Seq;
+                    int receivedCommandSequence = commands.Seq;
                     // Debug.Log($"rcvd {receivedCommandSequence} vs {clients[userID].cmdSeqReceived}");
                     if (receivedCommandSequence > clients[userID].cmdSeqReceived)
                     {
@@ -141,6 +141,8 @@ public class SimulationTest : MonoBehaviour
                 cubeClient.recvChannel.Send(packet, remoteEp);
 
                 packet.Free();
+                
+                commandPacket = cubeClient.sendChannel.GetPacket();
             }
         }
         if (accum >= sendRate)
