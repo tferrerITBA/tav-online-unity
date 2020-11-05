@@ -10,7 +10,9 @@ public enum PacketType
     PLAYER_JOINED = 25,
     PLAYER_DISCONNECT = 35,
     COMMANDS_ACK_MESSAGE = 0,
-    UPDATE_MESSAGE = 1
+    UPDATE_MESSAGE = 1,
+    PLAYER_SHOT = 88,
+    SHOT_ACK = 89
 }
 
 public class Serializer
@@ -73,7 +75,7 @@ public class Serializer
     }
 
     public static PacketType ClientDeserialize(List<Snapshot> interpolationBuffer, PlayerJoined playerJoined, BitBuffer buffer,
-        int displaySeq, CommandsList clientCommands, int cmdSeq) {
+        int displaySeq, CommandsList clientCommands, int cmdSeq, List<Shot> shots, int shotSeq) {
         var messageType = buffer.GetByte();
 
         if (messageType == (byte)PacketType.UPDATE_MESSAGE)
@@ -91,6 +93,17 @@ public class Serializer
             int receivedAckSequence = ClientDeserializeAck(buffer);
             clientCommands.Ack(receivedAckSequence);
             return PacketType.COMMANDS_ACK_MESSAGE;
+        } else if (messageType == (byte) PacketType.SHOT_ACK)
+        {
+            int receivedShotAckSeq = ClientDeserializeShotAck(buffer);
+            int count = 0;
+            foreach (var shot in shots)
+            {
+                if (shot.Seq <= receivedShotAckSeq)
+                    count++;
+            }
+            shots.RemoveRange(0, count);
+            return PacketType.SHOT_ACK;
         }
 
         return PacketType.PLAYER_DISCONNECT;
@@ -138,6 +151,7 @@ public class Serializer
 
     public static void ClientSerializeInput(CommandsList clientCommands, BitBuffer buffer)
     {
+        int count = clientCommands.Count();
         foreach (Commands commands in clientCommands.GetUnackedCommands())
         {
             buffer.PutInt(commands.Seq);
@@ -151,11 +165,38 @@ public class Serializer
         }
     }
 
+    public static void ClientSerializeShot(List<Shot> shots, BitBuffer buffer)
+    {
+        buffer.PutInt(shots.Count);
+        foreach (var shot in shots)
+        {
+            buffer.PutInt(shot.Seq);
+            buffer.PutInt(shot.UserID);
+            buffer.PutInt(shot.PlayerShotID);
+        }
+    }
+
+    public static void DeserializeShot(List<Shot> shots, BitBuffer buffer)
+    {
+        int count = buffer.GetInt();
+        while (count > 0)
+        {
+            shots.Add(new Shot(
+                    buffer.GetInt(),
+                    buffer.GetInt(),
+                    buffer.GetInt()
+                )
+            );
+            count--;
+        }
+    }
+
     public static List<Commands> ServerDeserializeInput(BitBuffer buffer)
     {
         List<Commands> totalCommands = new List<Commands>();
-        
-        while (buffer.HasRemaining())
+
+        int count = buffer.GetInt();
+        while (count > 0)
         {
             int seq = buffer.GetInt();
 
@@ -171,6 +212,7 @@ public class Serializer
             );
 
             totalCommands.Add(commands);
+            count--;
         }
 
         return totalCommands;
@@ -181,8 +223,19 @@ public class Serializer
         buffer.PutByte((byte)PacketType.COMMANDS_ACK_MESSAGE);
         buffer.PutInt(commandSequence);
     }
-    
+
     private static int ClientDeserializeAck(BitBuffer buffer)
+    {
+        return buffer.GetInt();
+    }
+
+    public static void ServerSerializeShotAck(BitBuffer buffer, int shotSequence)
+    {
+        buffer.PutByte((byte)PacketType.SHOT_ACK);
+        buffer.PutInt(shotSequence);
+    }
+    
+    private static int ClientDeserializeShotAck(BitBuffer buffer)
     {
         return buffer.GetInt();
     }

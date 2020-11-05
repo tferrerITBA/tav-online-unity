@@ -6,6 +6,12 @@ using Tests;
 using UnityEngine;
 using Vector3 = UnityEngine.Vector3;
 
+/*
+ * En el Update recibir los Shots. Aplicar todos los shots que lleguen
+ * Para cada uno de los disparos foreach de los clientes y mandar broadcast con tal disparo a tal
+ * y lo mato o no. Mandar el ack. Mandar un ack de ese broadcast.
+ */
+
 public class SimulationTest : MonoBehaviour
 {
     private Dictionary<int, ServerClientInfo> clients = new Dictionary<int, ServerClientInfo>();

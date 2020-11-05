@@ -22,12 +22,19 @@ public class CubeClient : MonoBehaviour
     private readonly List<Snapshot> interpolationBuffer = new List<Snapshot>();
     private readonly CommandsList commands = new CommandsList();
     private readonly Dictionary<int, GameObject> cubes = new Dictionary<int, GameObject>();
+    private readonly List<Shot> shots = new List<Shot>();
+    private int shotSeq = 1;
 
     public GameObject cubePrefab;
     public GameObject playerCubePrefab;
 
     public CharacterController ownCube;
-    public float gravity = -9.81f;
+    public int health = 100;
+    public float shotInterval = 1f;
+    public float shotCooldown = 0.1f;
+    public LayerMask shotsLayer;
+    public float shotMaxDistance;
+    private RaycastHit shotRaycastHit;
 
     public Color clientColor;
     public float speed = 5;
@@ -56,7 +63,7 @@ public class CubeClient : MonoBehaviour
         {
             var buffer = packet.buffer;
             var pt = Serializer.ClientDeserialize(interpolationBuffer, playersToInstantiate, buffer,
-                displaySeq, commands, currentCommands.Seq);
+                displaySeq, commands, currentCommands.Seq, shots, shotSeq);
             if (pt == PacketType.UPDATE_MESSAGE && ownCube) // a Snapshot was just received
             {
                 CorrectPosition(interpolationBuffer[interpolationBuffer.Count - 1].UserStates[userID]);
@@ -166,6 +173,31 @@ public class CubeClient : MonoBehaviour
         {
             currentCommands.Space = false;
         }
+
+        if (Input.GetButton("Fire1") && shotCooldown >= shotInterval)
+        {
+            if (Physics.Raycast(transform.position, transform.forward, out shotRaycastHit, shotMaxDistance,
+                shotsLayer))
+            {
+                Debug.DrawLine(transform.position, shotRaycastHit.point);
+                int otherPlayerId = Int32.Parse(shotRaycastHit.transform.name);
+                shots.Add(new Shot(shotSeq, userID, otherPlayerId));
+                
+                var packet = Packet.Obtain();
+                Serializer.ClientSerializeShot(shots, packet.buffer);
+                packet.buffer.Flush();
+
+                string serverIP = "127.0.0.1";
+                var remoteEp = new IPEndPoint(IPAddress.Parse(serverIP), sendPort);
+                sendChannel.Send(packet, remoteEp);
+                packet.Free();
+            }
+            
+            shotCooldown = 0;
+        }
+
+        if (shotCooldown < shotInterval)
+            shotCooldown += Time.deltaTime;
     }
 
     private void MoveOwnCube(Commands commandsToApply)
@@ -218,6 +250,8 @@ public class CubeClient : MonoBehaviour
                 {
                     player = Instantiate(cubePrefab, transform);
                 }
+
+                player.name = userStatePair.Key.ToString();
                 player.layer = gameObject.layer;
                 Renderer rndr = player.GetComponent<Renderer>();
                 rndr.material.color = clientColor;
