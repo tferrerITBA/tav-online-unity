@@ -12,7 +12,8 @@ public enum PacketType
     COMMANDS_ACK_MESSAGE = 0,
     UPDATE_MESSAGE = 1,
     PLAYER_SHOT = 88,
-    SHOT_ACK = 89
+    SHOT_ACK = 89,
+    COMMANDS = 77
 }
 
 public class Serializer
@@ -167,6 +168,7 @@ public class Serializer
 
     public static void ClientSerializeShot(List<Shot> shots, BitBuffer buffer)
     {
+        buffer.PutByte((byte)PacketType.PLAYER_SHOT);
         buffer.PutInt(shots.Count);
         foreach (var shot in shots)
         {
@@ -176,25 +178,8 @@ public class Serializer
         }
     }
 
-    public static void DeserializeShot(List<Shot> shots, BitBuffer buffer)
+    private static void DeserializeCommands(List<Commands> totalCommands, BitBuffer buffer)
     {
-        int count = buffer.GetInt();
-        while (count > 0)
-        {
-            shots.Add(new Shot(
-                    buffer.GetInt(),
-                    buffer.GetInt(),
-                    buffer.GetInt()
-                )
-            );
-            count--;
-        }
-    }
-
-    public static List<Commands> ServerDeserializeInput(BitBuffer buffer)
-    {
-        List<Commands> totalCommands = new List<Commands>();
-
         int count = buffer.GetInt();
         while (count > 0)
         {
@@ -214,8 +199,39 @@ public class Serializer
             totalCommands.Add(commands);
             count--;
         }
+    }
 
-        return totalCommands;
+    public static void DeserializeShot(List<Shot> shots, BitBuffer buffer)
+    {
+        int count = buffer.GetInt();
+        while (count > 0)
+        {
+            shots.Add(new Shot(
+                    buffer.GetInt(),
+                    buffer.GetInt(),
+                    buffer.GetInt()
+                )
+            );
+            count--;
+        }
+    }
+
+    public static PacketType ServerDeserializeInput(BitBuffer buffer, List<Commands> commandsList,
+        List<Shot> shotsList)
+    {
+        var messageType = buffer.GetByte();
+        if (messageType == (byte) PacketType.COMMANDS)
+        {
+            DeserializeCommands(commandsList, buffer);
+            return PacketType.COMMANDS;
+        }
+        if (messageType == (byte) PacketType.PLAYER_SHOT)
+        {
+            DeserializeShot(shotsList, buffer);
+            return PacketType.PLAYER_SHOT;
+        }
+
+        return PacketType.PLAYER_DISCONNECT;
     }
 
     public static void ServerSerializeAck(BitBuffer buffer, int commandSequence)

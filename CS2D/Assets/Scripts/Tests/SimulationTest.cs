@@ -120,35 +120,27 @@ public class SimulationTest : MonoBehaviour
         {
             int userID = cubeClientPair.Key;
             CubeClient cubeClient = cubeClientPair.Value;
-            var commandPacket = cubeClient.sendChannel.GetPacket();
+            var packet = cubeClient.sendChannel.GetPacket();
             
-            while (commandPacket != null) {
-                var buffer = commandPacket.buffer;
+            while (packet != null) {
+                var buffer = packet.buffer;
 
-                List<Commands> commandsList = Serializer.ServerDeserializeInput(buffer);
-
-                var packet = Packet.Obtain();
-                
-                foreach (Commands commands in commandsList)
+                List<Commands> commandsList = new List<Commands>();
+                List<Shot> shotsList = new List<Shot>();
+                var packetType = Serializer.ServerDeserializeInput(buffer, commandsList, shotsList);
+                switch (packetType)
                 {
-                    int receivedCommandSequence = commands.Seq;
-                    // Debug.Log($"rcvd {receivedCommandSequence} vs {clients[userID].cmdSeqReceived}");
-                    if (receivedCommandSequence > clients[userID].cmdSeqReceived)
-                    {
-                        clients[userID].pendingCommands.Add(commands);
-                        clients[userID].cmdSeqReceived = receivedCommandSequence;
-                    }
+                    case PacketType.COMMANDS:
+                        StoreCommands(userID, cubeClient, commandsList);
+                        break;
+                    case PacketType.PLAYER_SHOT:
+                        StoreShots(userID, cubeClient, shotsList);
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException();
                 }
-                Serializer.ServerSerializeAck(packet.buffer, clients[userID].cmdSeqReceived);
-                packet.buffer.Flush();
 
-                string serverIP = "127.0.0.1";
-                var remoteEp = new IPEndPoint(IPAddress.Parse(serverIP), cubeClient.recvPort);
-                cubeClient.recvChannel.Send(packet, remoteEp);
-
-                packet.Free();
-                
-                commandPacket = cubeClient.sendChannel.GetPacket();
+                packet = cubeClient.sendChannel.GetPacket();
             }
         }
         if (accum >= sendRate)
@@ -198,5 +190,52 @@ public class SimulationTest : MonoBehaviour
         cubeClientComponent.Initialize(sendPort, recvPort, userID,
             gameObject.layer + clientCount + 1);
         cubeClientComponent.gameObject.SetActive(true);
+    }
+
+    private void StoreCommands(int userID, CubeClient cubeClient, List<Commands> commandsList)
+    {
+        var packet = Packet.Obtain();
+                
+        foreach (Commands commands in commandsList)
+        {
+            int receivedCommandSequence = commands.Seq;
+            // Debug.Log($"rcvd {receivedCommandSequence} vs {clients[userID].cmdSeqReceived}");
+            if (receivedCommandSequence > clients[userID].cmdSeqReceived)
+            {
+                clients[userID].pendingCommands.Add(commands);
+                clients[userID].cmdSeqReceived = receivedCommandSequence;
+            }
+        }
+        Serializer.ServerSerializeAck(packet.buffer, clients[userID].cmdSeqReceived);
+        packet.buffer.Flush();
+
+        string serverIP = "127.0.0.1";
+        var remoteEp = new IPEndPoint(IPAddress.Parse(serverIP), cubeClient.recvPort);
+        cubeClient.recvChannel.Send(packet, remoteEp);
+
+        packet.Free();
+    }
+
+    private void StoreShots(int userID, CubeClient cubeClient, List<Shot> shotsList)
+    {
+        var packet = Packet.Obtain();
+        
+        foreach (Shot shot in shotsList)
+        {
+            int receivedShotSequence = shot.Seq;
+            if (receivedShotSequence > clients[userID].shotSeqReceived)
+            {
+                clients[userID].pendingShots.Add(shot);
+                clients[userID].shotSeqReceived = receivedShotSequence;
+            }
+        }
+        Serializer.ServerSerializeShotAck(packet.buffer, clients[userID].shotSeqReceived);
+        packet.buffer.Flush();
+
+        string serverIP = "127.0.0.1";
+        var remoteEp = new IPEndPoint(IPAddress.Parse(serverIP), cubeClient.recvPort);
+        cubeClient.recvChannel.Send(packet, remoteEp);
+
+        packet.Free();
     }
 }
