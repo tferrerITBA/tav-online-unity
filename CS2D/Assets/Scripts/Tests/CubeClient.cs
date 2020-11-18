@@ -52,6 +52,8 @@ public class CubeClient : MonoBehaviour
         this.recvChannel = new Channel(recvPort);
         this.userID = userID;
         gameObject.layer = cubesLayer;
+        shotsLayer = LayerMask.GetMask(LayerMask.LayerToName(cubesLayer));
+        shotMaxDistance = 1000000f;
         clientColor = new Color(Random.value, Random.value, Random.value);
         currentCommands = new Commands(userID);
     }
@@ -186,12 +188,17 @@ public class CubeClient : MonoBehaviour
             currentCommands.Space = false;
         }
 
-        if (Input.GetButton("Fire1") && shotCooldown >= shotInterval)
+        if (/*Input.GetButton("Fire1")*/ Input.GetKeyDown(KeyCode.L) && shotCooldown >= shotInterval)
         {
-            if (Physics.Raycast(transform.position, transform.forward, out shotRaycastHit, shotMaxDistance,
-                shotsLayer))
+            var tf = ownCube.transform;
+            var hit = Physics.Raycast(
+                tf.position,
+                tf.forward, out shotRaycastHit, shotMaxDistance,
+                shotsLayer);
+            if (hit)
             {
-                Debug.DrawLine(transform.position, shotRaycastHit.point);
+                Debug.DrawLine(ownCube.transform.position, shotRaycastHit.point, Color.red, 200);
+                // Debug.Log($"ORIGIN: {tf.position}; DIRECTION: {tf.forward}; HIT: {shotRaycastHit.point}");
                 int otherPlayerId = Int32.Parse(shotRaycastHit.transform.name);
                 shots.Add(new Shot(shotSeq, userID, otherPlayerId));
                 
@@ -282,6 +289,7 @@ public class CubeClient : MonoBehaviour
         {
             var newPlayer = Instantiate(cubePrefab, transform);
             newPlayer.layer = gameObject.layer;
+            newPlayer.name = playerJoined.UserID.ToString();
             var rndr = newPlayer.GetComponent<Renderer>();
             rndr.material.color = clientColor;
             cubes.Add(playerJoined.UserID, newPlayer);
