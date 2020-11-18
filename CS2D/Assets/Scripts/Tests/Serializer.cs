@@ -1,4 +1,5 @@
-﻿using System.Collections;
+﻿using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using Tests;
@@ -163,8 +164,9 @@ public class Serializer
     public static void ClientSerializeInput(CommandsList clientCommands, BitBuffer buffer)
     {
         buffer.PutByte((byte)PacketType.COMMANDS);
-        buffer.PutInt(clientCommands.Count());
-        foreach (Commands commands in clientCommands.GetUnackedCommands())
+        var unackedCommands = clientCommands.GetUnackedCommands();
+        buffer.PutInt(unackedCommands.Count);
+        foreach (Commands commands in unackedCommands)
         {
             buffer.PutInt(commands.Seq);
             buffer.PutInt(commands.UserID);
@@ -191,24 +193,43 @@ public class Serializer
 
     private static void DeserializeCommands(List<Commands> totalCommands, BitBuffer buffer)
     {
-        int count = buffer.GetInt();
-        while (count > 0)
+        int count;
+        int seq;
+        int a, b, c, d, e, f;
+        float g;
+        try
         {
-            int seq = buffer.GetInt();
+            count = buffer.GetInt();
+            while (count > 0)
+            {
+                seq = buffer.GetInt();
 
-            Commands commands = new Commands(
-                seq,
-                buffer.GetInt(),
-                buffer.GetInt() > 0,
-                buffer.GetInt() > 0,
-                buffer.GetInt() > 0,
-                buffer.GetInt() > 0,
-                buffer.GetInt() > 0,
-                buffer.GetFloat()
-            );
+                a = buffer.GetInt();
+                b = buffer.GetInt();
+                c = buffer.GetInt();
+                d = buffer.GetInt();
+                e = buffer.GetInt();
+                f = buffer.GetInt();
+                g = buffer.GetFloat();
 
-            totalCommands.Add(commands);
-            count--;
+                Commands commands = new Commands(
+                    seq,
+                    a,
+                    b > 0,
+                    c > 0,
+                    d > 0,
+                    e > 0,
+                    f > 0,
+                    g
+                );
+
+                totalCommands.Add(commands);
+                count--;
+            }
+        }
+        catch (Exception ex)
+        {
+            ;
         }
     }
 
