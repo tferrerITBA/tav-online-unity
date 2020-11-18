@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Net;
 using Tests;
 using UnityEngine;
@@ -35,6 +36,7 @@ public class SimulationTest : MonoBehaviour
     public ClientManager clientManager;
 
     public float gravity = -9.81f;
+    private const int DamagePerShot = 10;
 
     // Start is called before the first frame update
     void Start() {
@@ -102,6 +104,11 @@ public class SimulationTest : MonoBehaviour
             {
                 ExecuteClientInput(commands);
             }
+
+            foreach (var shot in cli.pendingShots)
+            {
+                ExecuteShot(shot);
+            }
             cli.pendingCommands.Clear();
         }
     }
@@ -128,6 +135,8 @@ public class SimulationTest : MonoBehaviour
                 List<Commands> commandsList = new List<Commands>();
                 List<Shot> shotsList = new List<Shot>();
                 var packetType = Serializer.ServerDeserializeInput(buffer, commandsList, shotsList);
+                // TODO: use generics to avoid code repetition,
+                // as shots and commands are handled the same way
                 switch (packetType)
                 {
                     case PacketType.COMMANDS:
@@ -135,6 +144,8 @@ public class SimulationTest : MonoBehaviour
                         break;
                     case PacketType.PLAYER_SHOT:
                         StoreShots(userID, cubeClient, shotsList);
+                        break;
+                    case PacketType.SHOT_BROADCAST_ACK:
                         break;
                     default:
                         throw new ArgumentOutOfRangeException();
@@ -167,6 +178,16 @@ public class SimulationTest : MonoBehaviour
             seq++;
         }
     }
+    
+    private void InstantiateClient(int userID, int sendPort, int recvPort)
+    {
+        CubeClient cubeClientComponent = Instantiate(clientPrefab);
+        clientManager.CubeClients.Add(userID, cubeClientComponent);
+            
+        cubeClientComponent.Initialize(sendPort, recvPort, userID,
+            gameObject.layer + clientCount + 1);
+        cubeClientComponent.gameObject.SetActive(true);
+    }
 
     private void ExecuteClientInput(Commands commands)
     {
@@ -182,14 +203,30 @@ public class SimulationTest : MonoBehaviour
         cubeCharacterCtrl.Move(move);
     }
 
-    private void InstantiateClient(int userID, int sendPort, int recvPort)
+    private void ExecuteShot(Shot shot)
     {
-        CubeClient cubeClientComponent = Instantiate(clientPrefab);
-        clientManager.CubeClients.Add(userID, cubeClientComponent);
-            
-        cubeClientComponent.Initialize(sendPort, recvPort, userID,
-            gameObject.layer + clientCount + 1);
-        cubeClientComponent.gameObject.SetActive(true);
+        clients[shot.PlayerShotID].health -= DamagePerShot;
+        bool playerDied = clients[shot.PlayerShotID].health <= 0;
+        var clientPorts = clientManager.cubeClients.Values.Select(x => x.recvChannel).ToList();
+        BroadcastShot(shot, playerDied);
+    }
+
+    private void BroadcastShot(Shot shot, bool playerDied)
+    {
+        foreach (var client in clientManager.cubeClients)
+        {
+            int port = client.Value.recvPort;
+            Channel channel = client.Value.recvChannel;
+            var packet = Packet.Obtain();
+            // Serializer.ShotBroadcastMessage(shot, playerDied)
+            packet.buffer.Flush();
+
+            string serverIP = "127.0.0.1";
+            var remoteEp = new IPEndPoint(IPAddress.Parse(serverIP), port);
+            channel.Send(packet, remoteEp);
+
+            packet.Free();
+        }
     }
 
     private void StoreCommands(int userID, CubeClient cubeClient, List<Commands> commandsList)

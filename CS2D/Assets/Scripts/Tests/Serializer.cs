@@ -12,7 +12,9 @@ public enum PacketType
     COMMANDS_ACK_MESSAGE = 0,
     UPDATE_MESSAGE = 1,
     PLAYER_SHOT = 88,
+    SHOT_BROADCAST = 95,
     SHOT_ACK = 89,
+    SHOT_BROADCAST_ACK = 99,
     COMMANDS = 77
 }
 
@@ -76,7 +78,8 @@ public class Serializer
     }
 
     public static PacketType ClientDeserialize(List<Snapshot> interpolationBuffer, PlayerJoined playerJoined, BitBuffer buffer,
-        int displaySeq, CommandsList clientCommands, int cmdSeq, List<Shot> shots, int shotSeq) {
+        int displaySeq, CommandsList clientCommands, int cmdSeq, List<Shot> shots, int shotSeq,
+        ShotBroadcast shotBroadcast) {
         var messageType = buffer.GetByte();
 
         if (messageType == (byte)PacketType.UPDATE_MESSAGE)
@@ -84,17 +87,18 @@ public class Serializer
             ClientDeserializeUpdate(interpolationBuffer, buffer, displaySeq, clientCommands);
             return PacketType.UPDATE_MESSAGE;
         }
-        else if (messageType == (byte)PacketType.PLAYER_JOINED)
+        if (messageType == (byte)PacketType.PLAYER_JOINED)
         {
             PlayerJoinedDeserialize(playerJoined, buffer);
             return PacketType.PLAYER_JOINED;
         }
-        else if (messageType == (byte)PacketType.COMMANDS_ACK_MESSAGE)
+        if (messageType == (byte)PacketType.COMMANDS_ACK_MESSAGE)
         {
             int receivedAckSequence = ClientDeserializeAck(buffer);
             clientCommands.Ack(receivedAckSequence);
             return PacketType.COMMANDS_ACK_MESSAGE;
-        } else if (messageType == (byte) PacketType.SHOT_ACK)
+        }
+        if (messageType == (byte) PacketType.SHOT_ACK)
         {
             int receivedShotAckSeq = ClientDeserializeShotAck(buffer);
             int count = 0;
@@ -105,6 +109,12 @@ public class Serializer
             }
             shots.RemoveRange(0, count);
             return PacketType.SHOT_ACK;
+        }
+
+        if (messageType == (byte) PacketType.SHOT_BROADCAST)
+        {
+            ClientDeserializeShotBroadcast(buffer, shotBroadcast);
+            return PacketType.SHOT_BROADCAST;
         }
 
         return PacketType.PLAYER_DISCONNECT;
@@ -254,5 +264,13 @@ public class Serializer
     private static int ClientDeserializeShotAck(BitBuffer buffer)
     {
         return buffer.GetInt();
+    }
+    
+    private static void ClientDeserializeShotBroadcast(BitBuffer buffer, ShotBroadcast shotBroadcast)
+    {
+        shotBroadcast.Seq = buffer.GetInt();
+        shotBroadcast.UserID = buffer.GetInt();
+        shotBroadcast.PlayerShotID = buffer.GetInt();
+        shotBroadcast.PlayerDied = buffer.GetInt() > 0;
     }
 }

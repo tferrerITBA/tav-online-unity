@@ -18,6 +18,7 @@ public class CubeClient : MonoBehaviour
     public float time;
     public bool isPlaying;
     private PlayerJoined playersToInstantiate = new PlayerJoined();
+    private ShotBroadcast shotBroadcast = new ShotBroadcast();
 
     private readonly List<Snapshot> interpolationBuffer = new List<Snapshot>();
     private readonly CommandsList commands = new CommandsList();
@@ -63,10 +64,21 @@ public class CubeClient : MonoBehaviour
         {
             var buffer = packet.buffer;
             var pt = Serializer.ClientDeserialize(interpolationBuffer, playersToInstantiate, buffer,
-                displaySeq, commands, currentCommands.Seq, shots, shotSeq);
+                displaySeq, commands, currentCommands.Seq, shots, shotSeq, shotBroadcast);
             if (pt == PacketType.UPDATE_MESSAGE && ownCube) // a Snapshot was just received
             {
                 CorrectPosition(interpolationBuffer[interpolationBuffer.Count - 1].UserStates[userID]);
+            }
+            else if (pt == PacketType.SHOT_BROADCAST)
+            {
+                if (shotBroadcast.PlayerDied)
+                {
+                    cubes[shotBroadcast.PlayerShotID].SetActive(false);
+                }
+                else
+                {
+                    // An animation or an effect could be shown
+                }
             }
             
             packet = recvChannel.GetPacket();
@@ -280,7 +292,9 @@ public class CubeClient : MonoBehaviour
     {
         foreach (var userCubePair in cubes)
         {
-            if (!prevSnapshot.UserStates.ContainsKey(userCubePair.Key) || userCubePair.Key == userID)
+            if (!prevSnapshot.UserStates.ContainsKey(userCubePair.Key) // snapshot where player did not exist yet 
+                    || userCubePair.Key == userID // no interpolation for client's own cube
+                    || !userCubePair.Value.activeSelf) // player is dead and has not respawned
                 continue;
             
             var position = new Vector3();
