@@ -193,43 +193,24 @@ public class Serializer
 
     private static void DeserializeCommands(List<Commands> totalCommands, BitBuffer buffer)
     {
-        int count;
-        int seq;
-        int a, b, c, d, e, f;
-        float g;
-        try
+        var count = buffer.GetInt();
+        while (count > 0)
         {
-            count = buffer.GetInt();
-            while (count > 0)
-            {
-                seq = buffer.GetInt();
+            var seq = buffer.GetInt();
 
-                a = buffer.GetInt();
-                b = buffer.GetInt();
-                c = buffer.GetInt();
-                d = buffer.GetInt();
-                e = buffer.GetInt();
-                f = buffer.GetInt();
-                g = buffer.GetFloat();
+            Commands commands = new Commands(
+                seq,
+                buffer.GetInt(),
+                buffer.GetInt() > 0,
+                buffer.GetInt() > 0,
+                buffer.GetInt() > 0,
+                buffer.GetInt() > 0,
+                buffer.GetInt() > 0,
+                buffer.GetFloat()
+            );
 
-                Commands commands = new Commands(
-                    seq,
-                    a,
-                    b > 0,
-                    c > 0,
-                    d > 0,
-                    e > 0,
-                    f > 0,
-                    g
-                );
-
-                totalCommands.Add(commands);
-                count--;
-            }
-        }
-        catch (Exception ex)
-        {
-            ;
+            totalCommands.Add(commands);
+            count--;
         }
     }
 
