@@ -276,4 +276,13 @@ public class Serializer
         shotBroadcast.PlayerShotID = buffer.GetInt();
         shotBroadcast.PlayerDied = buffer.GetInt() > 0;
     }
+
+    public static void ShotBroadcastMessage(BitBuffer buffer, Shot shot, bool playerDied)
+    {
+        buffer.PutByte((byte) PacketType.SHOT_BROADCAST);
+        buffer.PutInt(shot.Seq);
+        buffer.PutInt(shot.UserID);
+        buffer.PutInt(shot.PlayerShotID);
+        buffer.PutInt(playerDied ? 1 : 0);
+    }
 }

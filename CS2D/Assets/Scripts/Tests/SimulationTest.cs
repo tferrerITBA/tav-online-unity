@@ -213,12 +213,12 @@ public class SimulationTest : MonoBehaviour
 
     private void BroadcastShot(Shot shot, bool playerDied)
     {
-        /*foreach (var client in clientManager.cubeClients)
+        foreach (var client in clientManager.cubeClients)
         {
             int port = client.Value.recvPort;
             Channel channel = client.Value.recvChannel;
             var packet = Packet.Obtain();
-            // Serializer.ShotBroadcastMessage(shot, playerDied)
+            Serializer.ShotBroadcastMessage(packet.buffer, shot, playerDied);
             packet.buffer.Flush();
 
             string serverIP = "127.0.0.1";
@@ -226,7 +226,7 @@ public class SimulationTest : MonoBehaviour
             channel.Send(packet, remoteEp);
 
             packet.Free();
-        }*/
+        }
     }
 
     private void StoreCommands(int userID, CubeClient cubeClient, List<Commands> commandsList)
