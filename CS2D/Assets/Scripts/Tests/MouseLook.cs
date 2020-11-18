@@ -30,4 +30,11 @@ public class MouseLook : MonoBehaviour
         transform.localRotation = Quaternion.Euler(xRotation, 0f, 0f);
         player.Rotate(Vector3.up * mouseX);
     }
+    
+    void OnGUI(){
+        // Draw Crosshair
+        GUI.Box(new Rect(
+            Screen.width/2.0f,Screen.height/2.0f, 10, 10
+            ), "");
+    }
 }
