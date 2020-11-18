@@ -162,6 +162,7 @@ public class Serializer
 
     public static void ClientSerializeInput(CommandsList clientCommands, BitBuffer buffer)
     {
+        buffer.PutByte((byte)PacketType.COMMANDS);
         int count = clientCommands.Count();
         foreach (Commands commands in clientCommands.GetUnackedCommands())
         {
