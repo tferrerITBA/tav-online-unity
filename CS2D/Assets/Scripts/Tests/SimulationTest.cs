@@ -213,7 +213,7 @@ public class SimulationTest : MonoBehaviour
 
     private void BroadcastShot(Shot shot, bool playerDied)
     {
-        foreach (var client in clientManager.cubeClients)
+        /*foreach (var client in clientManager.cubeClients)
         {
             int port = client.Value.recvPort;
             Channel channel = client.Value.recvChannel;
@@ -226,7 +226,7 @@ public class SimulationTest : MonoBehaviour
             channel.Send(packet, remoteEp);
 
             packet.Free();
-        }
+        }*/
     }
 
     private void StoreCommands(int userID, CubeClient cubeClient, List<Commands> commandsList)
