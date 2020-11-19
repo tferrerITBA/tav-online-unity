@@ -209,6 +209,7 @@ public class SimulationTest : MonoBehaviour
     private void ExecuteShot(Shot shot)
     {
         clients[shot.PlayerShotID].health -= DamagePerShot;
+        Debug.Log(clients[shot.PlayerShotID].health);
         bool playerDied = clients[shot.PlayerShotID].health <= 0;
         var clientPorts = clientManager.cubeClients.Values.Select(x => x.recvChannel).ToList();
         BroadcastShot(shot, playerDied);

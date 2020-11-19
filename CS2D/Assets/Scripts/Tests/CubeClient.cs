@@ -160,6 +160,9 @@ public class CubeClient : MonoBehaviour
 
     private void ReadClientInput()
     {
+        if (!ownCube || !ownCube.gameObject.activeSelf) // player not respawned yet
+            return;
+        
         if (Input.GetKeyDown(KeyCode.UpArrow))
         {
             currentCommands.Up = true;
@@ -231,6 +234,9 @@ public class CubeClient : MonoBehaviour
 
     private void MoveOwnCube(Commands commandsToApply)
     {
+        if (!ownCube.gameObject.activeSelf) // player not respawned yet
+            return;
+        
         if (!ownCube.isGrounded)
         {
             // Vector3 vel = new Vector3(0, gravity * Time.deltaTime, 0);
@@ -247,6 +253,9 @@ public class CubeClient : MonoBehaviour
     
     private void CorrectPosition(UserState userState)
     {
+        if (!ownCube || !ownCube.gameObject.activeSelf) // player not respawned yet
+            return;
+        
         ownCube.transform.position = userState.Position;
         foreach (var cmd in commands.GetSnapshotUnackedCommands())
         {
