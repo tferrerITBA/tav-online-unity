@@ -8,6 +8,7 @@ using UnityEngine;
 public enum PacketType
 {
     PLAYER_CONNECT = 24,
+    PLAYER_CONNECT_ACK = 41,
     PLAYER_JOINED = 25,
     PLAYER_DISCONNECT = 35,
     COMMANDS_ACK_MESSAGE = 0,
@@ -34,21 +35,25 @@ public class Serializer
         return buffer.GetInt();
     }
 
-    public static void PlayerConnectResponse(BitBuffer buffer, int userID, int srvPort, int cliPort)
+    public static void PlayerConnectResponse(BitBuffer buffer, int userID, int srvPort)
     {
         buffer.PutByte((byte)PacketType.PLAYER_CONNECT);
         buffer.PutInt(userID);
         buffer.PutInt(srvPort);
-        buffer.PutInt(cliPort);
+    }
+
+    public static void PlayerConnectResponseAck(BitBuffer buffer, int userID)
+    {
+        buffer.PutByte((byte) PacketType.PLAYER_CONNECT_ACK);
+        buffer.PutInt(userID);
     }
 
     public static int[] PlayerConnectResponseDeserialize(BitBuffer buffer)
     {
-        int[] resp = new int[3];
+        int[] resp = new int[2];
         buffer.GetByte(); // PlayerConnect
         resp[0] = buffer.GetInt(); // userID
         resp[1] = buffer.GetInt(); // srvPort
-        resp[2] = buffer.GetInt(); // cliPort
         return resp;
     }
 

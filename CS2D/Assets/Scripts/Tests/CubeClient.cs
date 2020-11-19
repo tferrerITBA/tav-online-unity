@@ -43,11 +43,11 @@ public class CubeClient : MonoBehaviour
 
     private Commands currentCommands;
 
-    public void Initialize(int srvPort, int cliPort, int userID, int cubesLayer)
+    public void Initialize(int srvPort, int cliPort, int userID, int cubesLayer, Channel channel)
     {
         this.srvPort = srvPort;
         this.cliPort = cliPort;
-        this.channel = new Channel(cliPort);
+        this.channel = channel;
         this.userID = userID;
         gameObject.layer = cubesLayer;
         shotsLayer = LayerMask.GetMask(LayerMask.LayerToName(cubesLayer));

@@ -6,23 +6,24 @@ using Random = UnityEngine.Random;
 
 public class ClientManager : MonoBehaviour
 {
-    public const int Port = 8998;
+    public string serverIP = "127.0.0.1";
+    private IPEndPoint serverRemote;
+    public int clientPort = 9001;
     public Channel channel;
     
     public CubeClient clientPrefab;
     private Dictionary<int, CubeClient> cubeClients = new Dictionary<int, CubeClient>();
     private int startingLayer = 9;
-    private int clientCount = 0;
+    private int clientCount;
 
     public Dictionary<int, CubeClient> CubeClients => cubeClients;
 
     public int interpolationCount = 2;
 
-    //public SimulationTest tralala;
-    
     void Start()
     {
-        channel = new Channel(Port);
+        channel = new Channel(clientPort);
+        serverRemote = new IPEndPoint(IPAddress.Parse(serverIP), SimulationTest.PlayerJoinPort);
     }
 
     // Update is called once per frame
@@ -48,9 +49,8 @@ public class ClientManager : MonoBehaviour
             var packet = Packet.Obtain();
             Serializer.PlayerConnectSerialize(packet.buffer, userID);
             packet.buffer.Flush();
-            
-            string serverIP = "127.0.0.1";
-            var remoteEp = new IPEndPoint(IPAddress.Parse(serverIP), SimulationTest.PlayerJoinPort);
+
+            var remoteEp = serverRemote;
             channel.Send(packet, remoteEp);
             
             packet.Free();
@@ -63,18 +63,20 @@ public class ClientManager : MonoBehaviour
             clientCount++;
             var userID = responseData[0];
             var srvPort = responseData[1];
-            var cliPort = responseData[2];
-            InstantiateClient(userID, srvPort, cliPort);
+            InstantiateClient(userID, srvPort, clientPort, channel);
+
+            clientPort += 2;
+            channel = new Channel(clientPort);
         }
     }
     
-    private void InstantiateClient(int userID, int srvPort, int cliPort)
+    private void InstantiateClient(int userID, int srvPort, int cliPort, Channel clientChannel)
     {
         CubeClient cubeClientComponent = Instantiate(clientPrefab);
         CubeClients.Add(userID, cubeClientComponent);
             
         cubeClientComponent.Initialize(srvPort, cliPort, userID,
-            gameObject.layer + clientCount);
+            gameObject.layer + clientCount, clientChannel);
         cubeClientComponent.gameObject.SetActive(true);
     }
 

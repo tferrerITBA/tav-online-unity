@@ -16,12 +16,11 @@ using Vector3 = UnityEngine.Vector3;
 public class SimulationTest : MonoBehaviour
 {
     private Dictionary<int, ServerClientInfo> clients = new Dictionary<int, ServerClientInfo>();
-
-    private const int PortsPerClient = 2;
+    
     public const int PlayerJoinPort = 8999;
     private Channel playerJoinChannel;
-    public int sendBasePort = 9000;
-    public int recvBasePort = 9001;
+    public int clientPort = 9000;
+    
     public int clientCount;
     
     public int pps = 10;
@@ -65,22 +64,20 @@ public class SimulationTest : MonoBehaviour
         if (packet != null)
         {
             int userID = Serializer.PlayerConnectDeserialize(packet.buffer);
-            var origPort = sendBasePort + clientCount * PortsPerClient;
-            var destPort = recvBasePort + clientCount * PortsPerClient;
-            
+            var origPort = clientPort;
+            var dest = new IPEndPoint(packet.fromEndPoint.Address, packet.fromEndPoint.Port);
+
             CharacterController newCube = Instantiate(cubePrefab, transform); // instantiate server cube (gray)
-            clients.Add(userID, new ServerClientInfo(userID, origPort, destPort, newCube));
+            clients.Add(userID, new ServerClientInfo(userID, origPort, dest, newCube));
             
             clientCount++;
+            clientPort += 2;
 
             var playerConnectResponse = Packet.Obtain();
-            Serializer.PlayerConnectResponse(playerConnectResponse.buffer,
-                userID, origPort, destPort);
+            Serializer.PlayerConnectResponse(playerConnectResponse.buffer, userID, origPort);
             playerConnectResponse.buffer.Flush();
             
-            string clientMgr = "127.0.0.1";
-            var ep = new IPEndPoint(IPAddress.Parse(clientMgr), ClientManager.Port);
-            playerJoinChannel.Send(playerConnectResponse, ep);
+            playerJoinChannel.Send(playerConnectResponse, dest);
 
             packet.Free();
 
@@ -91,8 +88,7 @@ public class SimulationTest : MonoBehaviour
                 Serializer.PlayerJoinedSerialize(playerJoinedPacket.buffer, playerJoined);
                 playerJoinedPacket.buffer.Flush();
                 
-                string serverIP = "127.0.0.1";
-                var remoteEp = new IPEndPoint(IPAddress.Parse(serverIP), clientPair.Value.destPort);
+                var remoteEp = clientPair.Value.dest;
                 clientPair.Value.channel.Send(playerJoinedPacket, remoteEp);
 
                 packet.Free();
@@ -137,13 +133,7 @@ public class SimulationTest : MonoBehaviour
     private void UpdateServer()
     {
         serverTime += Time.deltaTime;
-
-        /*string str = "";
-        foreach (var cli in clientManager.cubeClients)
-        {
-            str += $"{cli.Value.userID} ";
-        }
-        Debug.Log(str);*/
+        
         foreach (var cubeClientPair in clients)
         {
             int userID = cubeClientPair.Key;
@@ -189,9 +179,8 @@ public class SimulationTest : MonoBehaviour
                 Serializer.ServerWorldSerialize(clients, packet.buffer, seq,
                     serverTime, lastCommandsReceived);
                 packet.buffer.Flush();
-
-                string serverIP = "127.0.0.1";
-                var remoteEp = new IPEndPoint(IPAddress.Parse(serverIP), cubeClient.destPort);
+                
+                var remoteEp = cubeClientPair.Value.dest;
                 cubeClient.channel.Send(packet, remoteEp);
 
                 packet.Free();
@@ -235,14 +224,12 @@ public class SimulationTest : MonoBehaviour
         clients[shot.UserID].unackedShotBroadcasts[s] = new List<int>(); 
         foreach (var client in clients)
         {
-            int port = client.Value.destPort;
             Channel channel = client.Value.channel;
             var packet = Packet.Obtain();
             Serializer.ShotBroadcastMessage(packet.buffer, shot, playerDied);
             packet.buffer.Flush();
-
-            string serverIP = "127.0.0.1";
-            var remoteEp = new IPEndPoint(IPAddress.Parse(serverIP), port);
+            
+            var remoteEp = client.Value.dest;
             channel.Send(packet, remoteEp);
 
             packet.Free();
@@ -275,9 +262,8 @@ public class SimulationTest : MonoBehaviour
         }
         Serializer.ServerSerializeAck(packet.buffer, clients[userID].cmdSeqReceived);
         packet.buffer.Flush();
-
-        string serverIP = "127.0.0.1";
-        var remoteEp = new IPEndPoint(IPAddress.Parse(serverIP), client.destPort);
+        
+        var remoteEp = client.dest;
         client.channel.Send(packet, remoteEp);
 
         packet.Free();
@@ -298,9 +284,8 @@ public class SimulationTest : MonoBehaviour
         }
         Serializer.ServerSerializeShotAck(packet.buffer, clients[userID].shotSeqReceived);
         packet.buffer.Flush();
-
-        string serverIP = "127.0.0.1";
-        var remoteEp = new IPEndPoint(IPAddress.Parse(serverIP), client.destPort);
+        
+        var remoteEp = client.dest;
         client.channel.Send(packet, remoteEp);
 
         packet.Free();

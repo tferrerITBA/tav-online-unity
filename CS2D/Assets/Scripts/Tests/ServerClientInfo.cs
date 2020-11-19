@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Net;
 using Tests;
 using UnityEngine;
 
@@ -7,7 +8,7 @@ public class ServerClientInfo
 {
     public int userID;
     public Channel channel;
-    public int destPort;
+    public IPEndPoint dest;
     public int cmdSeqReceived;
     public int shotSeqReceived;
     public List<Commands> pendingCommands = new List<Commands>();
@@ -16,11 +17,11 @@ public class ServerClientInfo
     public CharacterController characterController;
     public int health = 100;
 
-    public ServerClientInfo(int userID, int origPort, int destPort, CharacterController characterController)
+    public ServerClientInfo(int userID, int origPort, IPEndPoint dest, CharacterController characterController)
     {
         this.userID = userID;
         this.channel = new Channel(origPort);
-        this.destPort = destPort;
+        this.dest = dest;
         this.characterController = characterController;
     }
 }
