@@ -40,5 +40,28 @@ public class ShotBroadcast
         get => playerDied;
         set => playerDied = value;
     }
+    
+    public override bool Equals(object obj)
+    {
+        ShotBroadcast other = obj as ShotBroadcast;
+
+        if (other == null)
+        {
+            return false;
+        }
+
+        return seq == other.Seq && userID == other.UserID && playerShotID == other.PlayerShotID
+               && playerDied == other.playerDied;
+    }
+
+    public override int GetHashCode()
+    {
+        int hash = 13;
+        hash = (hash * 7) + seq.GetHashCode();
+        hash = (hash * 7) + userID.GetHashCode();
+        hash = (hash * 7) + playerShotID.GetHashCode();
+        hash = (hash * 7) + playerDied.GetHashCode();
+        return hash;
+    }
 }
 

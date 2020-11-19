@@ -114,7 +114,7 @@ public class Serializer
 
         if (messageType == (byte) PacketType.SHOT_BROADCAST)
         {
-            ClientDeserializeShotBroadcast(buffer, shotBroadcast);
+            DeserializeShotBroadcast(buffer, shotBroadcast);
             return PacketType.SHOT_BROADCAST;
         }
 
@@ -230,7 +230,7 @@ public class Serializer
     }
 
     public static PacketType ServerDeserializeInput(BitBuffer buffer, List<Commands> commandsList,
-        List<Shot> shotsList)
+        List<Shot> shotsList, ShotBroadcast shotBroadcast)
     {
         var messageType = buffer.GetByte();
         if (messageType == (byte) PacketType.COMMANDS)
@@ -242,6 +242,12 @@ public class Serializer
         {
             DeserializeShot(shotsList, buffer);
             return PacketType.PLAYER_SHOT;
+        }
+
+        if (messageType == (byte) PacketType.SHOT_BROADCAST_ACK)
+        {
+            DeserializeShotBroadcast(buffer, shotBroadcast); // SAME AS SHOTBROADCAST; BUT ITS AN ACK
+            return PacketType.SHOT_BROADCAST_ACK;
         }
 
         return PacketType.PLAYER_DISCONNECT;
@@ -269,7 +275,7 @@ public class Serializer
         return buffer.GetInt();
     }
     
-    private static void ClientDeserializeShotBroadcast(BitBuffer buffer, ShotBroadcast shotBroadcast)
+    private static void DeserializeShotBroadcast(BitBuffer buffer, ShotBroadcast shotBroadcast)
     {
         shotBroadcast.Seq = buffer.GetInt();
         shotBroadcast.UserID = buffer.GetInt();
@@ -284,5 +290,14 @@ public class Serializer
         buffer.PutInt(shot.UserID);
         buffer.PutInt(shot.PlayerShotID);
         buffer.PutInt(playerDied ? 1 : 0);
+    }
+
+    public static void ClientSerializeShotBroadcastAck(ShotBroadcast shotBroadcast, BitBuffer buffer)
+    {
+        buffer.PutByte((byte) PacketType.SHOT_BROADCAST_ACK);
+        buffer.PutInt(shotBroadcast.Seq);
+        buffer.PutInt(shotBroadcast.UserID);
+        buffer.PutInt(shotBroadcast.PlayerShotID);
+        buffer.PutInt(shotBroadcast.PlayerDied ? 1 : 0);
     }
 }

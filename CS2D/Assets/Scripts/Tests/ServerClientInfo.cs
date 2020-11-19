@@ -10,6 +10,7 @@ public class ServerClientInfo
     public int shotSeqReceived;
     public List<Commands> pendingCommands = new List<Commands>();
     public List<Shot> pendingShots = new List<Shot>();
+    public Dictionary<ShotBroadcast, List<int>> unackedShotBroadcasts = new Dictionary<ShotBroadcast, List<int>>();
     public CharacterController characterController;
     public int health = 100;
 

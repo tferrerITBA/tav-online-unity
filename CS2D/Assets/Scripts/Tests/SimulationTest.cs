@@ -110,6 +110,7 @@ public class SimulationTest : MonoBehaviour
                 ExecuteShot(shot);
             }
             cli.pendingCommands.Clear();
+            cli.pendingShots.Clear();
         }
     }
 
@@ -134,7 +135,8 @@ public class SimulationTest : MonoBehaviour
 
                 List<Commands> commandsList = new List<Commands>();
                 List<Shot> shotsList = new List<Shot>();
-                var packetType = Serializer.ServerDeserializeInput(buffer, commandsList, shotsList);
+                ShotBroadcast s = new ShotBroadcast();
+                var packetType = Serializer.ServerDeserializeInput(buffer, commandsList, shotsList, s);
                 // TODO: use generics to avoid code repetition,
                 // as shots and commands are handled the same way
                 switch (packetType)
@@ -146,6 +148,7 @@ public class SimulationTest : MonoBehaviour
                         StoreShots(userID, cubeClient, shotsList);
                         break;
                     case PacketType.SHOT_BROADCAST_ACK:
+                        AckBroadcastShot(userID, s);
                         break;
                     default:
                         throw new ArgumentOutOfRangeException();
@@ -213,6 +216,11 @@ public class SimulationTest : MonoBehaviour
 
     private void BroadcastShot(Shot shot, bool playerDied)
     {
+        ShotBroadcast s = new ShotBroadcast
+        {
+            Seq = shot.Seq, UserID = shot.UserID, PlayerShotID = shot.PlayerShotID, PlayerDied = playerDied
+        };
+        clients[shot.UserID].unackedShotBroadcasts[s] = new List<int>(); 
         foreach (var client in clientManager.cubeClients)
         {
             int port = client.Value.recvPort;
@@ -226,7 +234,17 @@ public class SimulationTest : MonoBehaviour
             channel.Send(packet, remoteEp);
 
             packet.Free();
+            clients[shot.UserID].unackedShotBroadcasts[s].Add(client.Key);
         }
+    }
+
+    private void AckBroadcastShot(int userID, ShotBroadcast shotBroadcast)
+    {
+        var pendingAcks = clients[shotBroadcast.UserID].unackedShotBroadcasts[shotBroadcast];
+        pendingAcks.RemoveAll(
+            x => x == userID);
+        if (pendingAcks.Count == 0)
+            clients[shotBroadcast.UserID].unackedShotBroadcasts.Remove(shotBroadcast);
     }
 
     private void StoreCommands(int userID, CubeClient cubeClient, List<Commands> commandsList)
