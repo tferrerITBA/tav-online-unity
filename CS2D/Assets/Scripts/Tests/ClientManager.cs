@@ -6,11 +6,8 @@ using Random = UnityEngine.Random;
 
 public class ClientManager : MonoBehaviour
 {
-    public int playerJoinSendPort;
-    public Channel playerJoinSendChannel;
-
-    public int playerJoinRecvPort;
-    public Channel playerJoinRecvChannel;
+    public int port = 8998;
+    public Channel channel;
 
     public Dictionary<int, CubeClient> cubeClients = new Dictionary<int, CubeClient>();
 
@@ -22,8 +19,7 @@ public class ClientManager : MonoBehaviour
     
     void Start()
     {
-        playerJoinSendChannel = new Channel(playerJoinSendPort);
-        playerJoinRecvChannel = new Channel(playerJoinRecvPort);
+        channel = new Channel(port);
     }
 
     // Update is called once per frame
@@ -51,8 +47,8 @@ public class ClientManager : MonoBehaviour
             packet.buffer.Flush();
             
             string serverIP = "127.0.0.1";
-            var remoteEp = new IPEndPoint(IPAddress.Parse(serverIP), playerJoinSendPort);
-            playerJoinSendChannel.Send(packet, remoteEp);
+            var remoteEp = new IPEndPoint(IPAddress.Parse(serverIP), SimulationTest.PlayerJoinPort);
+            channel.Send(packet, remoteEp);
             
             packet.Free();
         }
@@ -60,7 +56,6 @@ public class ClientManager : MonoBehaviour
 
     private void OnDestroy()
     {
-        playerJoinRecvChannel.Disconnect();
-        playerJoinSendChannel.Disconnect();
+        channel.Disconnect();
     }
 }

@@ -18,6 +18,8 @@ public class SimulationTest : MonoBehaviour
     private Dictionary<int, ServerClientInfo> clients = new Dictionary<int, ServerClientInfo>();
 
     private const int PortsPerClient = 2;
+    public const int PlayerJoinPort = 8999;
+    private Channel playerJoinChannel;
     public int sendBasePort = 9000;
     public int recvBasePort = 9001;
     public int clientCount;
@@ -37,7 +39,7 @@ public class SimulationTest : MonoBehaviour
 
     public float gravity = -9.81f;
     private const int DamagePerShot = 10;
-    private int _shotCount = 0;
+    private int shotCount = 0;
 
     public float ShotAckTimeout = 1f;
     public float ShotAckTime;
@@ -47,6 +49,7 @@ public class SimulationTest : MonoBehaviour
     // Start is called before the first frame update
     void Start() {
         sendRate = 1f / pps;
+        playerJoinChannel = new Channel(PlayerJoinPort);
     }
 
     // Update is called once per frame
@@ -58,7 +61,7 @@ public class SimulationTest : MonoBehaviour
 
         accum += Time.deltaTime;
 
-        var packet = clientManager.playerJoinSendChannel.GetPacket();
+        var packet = playerJoinChannel.GetPacket();
         if (packet != null)
         {
             int userID = Serializer.PlayerConnectDeserialize(packet.buffer);
@@ -214,7 +217,7 @@ public class SimulationTest : MonoBehaviour
 
     private void ExecuteShot(Shot shot)
     {
-        _shotCount++;
+        shotCount++;
         clients[shot.PlayerShotID].health -= DamagePerShot;
         Debug.Log(clients[shot.PlayerShotID].health);
         bool playerDied = clients[shot.PlayerShotID].health <= 0;
@@ -226,7 +229,7 @@ public class SimulationTest : MonoBehaviour
     {
         ShotBroadcast s = new ShotBroadcast
         {
-            ShotId = _shotCount, UserID = shot.UserID, PlayerShotID = shot.PlayerShotID, PlayerDied = playerDied
+            ShotId = shotCount, UserID = shot.UserID, PlayerShotID = shot.PlayerShotID, PlayerDied = playerDied
         };
         clients[shot.UserID].unackedShotBroadcasts[s] = new List<int>(); 
         foreach (var client in clientManager.cubeClients)
