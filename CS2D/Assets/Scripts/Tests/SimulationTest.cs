@@ -65,24 +65,35 @@ public class SimulationTest : MonoBehaviour
         if (packet != null)
         {
             int userID = Serializer.PlayerConnectDeserialize(packet.buffer);
+            var origPort = sendBasePort + clientCount * PortsPerClient;
+            var destPort = recvBasePort + clientCount * PortsPerClient;
             
             CharacterController newCube = Instantiate(cubePrefab, transform); // instantiate server cube (gray)
-            clients.Add(userID, new ServerClientInfo(userID, newCube));
-
-            InstantiateClient(userID, sendBasePort + clientCount * PortsPerClient,
-                recvBasePort + clientCount * PortsPerClient);
+            clients.Add(userID, new ServerClientInfo(userID, origPort, destPort, newCube));
+            
             clientCount++;
 
+            var playerConnectResponse = Packet.Obtain();
+            Serializer.PlayerConnectResponse(playerConnectResponse.buffer,
+                userID, origPort, destPort);
+            playerConnectResponse.buffer.Flush();
+            
+            string clientMgr = "127.0.0.1";
+            var ep = new IPEndPoint(IPAddress.Parse(clientMgr), ClientManager.Port);
+            playerJoinChannel.Send(playerConnectResponse, ep);
+
+            packet.Free();
+
             PlayerJoined playerJoined = new PlayerJoined(userID, clientCount, seq, serverTime);
-            foreach (var clientPair in clientManager.cubeClients)
+            foreach (var clientPair in clients)
             {
                 var playerJoinedPacket = Packet.Obtain();
                 Serializer.PlayerJoinedSerialize(playerJoinedPacket.buffer, playerJoined);
                 playerJoinedPacket.buffer.Flush();
                 
                 string serverIP = "127.0.0.1";
-                var remoteEp = new IPEndPoint(IPAddress.Parse(serverIP), clientPair.Value.recvPort);
-                clientPair.Value.recvChannel.Send(playerJoinedPacket, remoteEp);
+                var remoteEp = new IPEndPoint(IPAddress.Parse(serverIP), clientPair.Value.destPort);
+                clientPair.Value.channel.Send(playerJoinedPacket, remoteEp);
 
                 packet.Free();
             }
@@ -133,11 +144,11 @@ public class SimulationTest : MonoBehaviour
             str += $"{cli.Value.userID} ";
         }
         Debug.Log(str);*/
-        foreach (var cubeClientPair in clientManager.cubeClients)
+        foreach (var cubeClientPair in clients)
         {
             int userID = cubeClientPair.Key;
-            CubeClient cubeClient = cubeClientPair.Value;
-            var packet = cubeClient.sendChannel.GetPacket();
+            var cubeClient = cubeClientPair.Value;
+            var packet = cubeClient.channel.GetPacket();
             
             while (packet != null) {
                 var buffer = packet.buffer;
@@ -163,15 +174,15 @@ public class SimulationTest : MonoBehaviour
                         throw new ArgumentOutOfRangeException();
                 }
 
-                packet = cubeClient.sendChannel.GetPacket();
+                packet = cubeClient.channel.GetPacket();
             }
         }
         if (accum >= sendRate)
         {
-            foreach (var cubeClientPair in clientManager.cubeClients)
+            foreach (var cubeClientPair in clients)
             {
                 int userID = cubeClientPair.Key;
-                CubeClient cubeClient = cubeClientPair.Value;
+                var cubeClient = cubeClientPair.Value;
                 int lastCommandsReceived = clients[userID].cmdSeqReceived;
                 // Serialize snapshot
                 var packet = Packet.Obtain();
@@ -180,8 +191,8 @@ public class SimulationTest : MonoBehaviour
                 packet.buffer.Flush();
 
                 string serverIP = "127.0.0.1";
-                var remoteEp = new IPEndPoint(IPAddress.Parse(serverIP), cubeClient.recvPort);
-                cubeClient.recvChannel.Send(packet, remoteEp);
+                var remoteEp = new IPEndPoint(IPAddress.Parse(serverIP), cubeClient.destPort);
+                cubeClient.channel.Send(packet, remoteEp);
 
                 packet.Free();
             }
@@ -189,16 +200,6 @@ public class SimulationTest : MonoBehaviour
             accum -= sendRate;
             seq++;
         }
-    }
-    
-    private void InstantiateClient(int userID, int sendPort, int recvPort)
-    {
-        CubeClient cubeClientComponent = Instantiate(clientPrefab);
-        clientManager.CubeClients.Add(userID, cubeClientComponent);
-            
-        cubeClientComponent.Initialize(sendPort, recvPort, userID,
-            gameObject.layer + clientCount + 1);
-        cubeClientComponent.gameObject.SetActive(true);
     }
 
     private void ExecuteClientInput(Commands commands)
@@ -221,7 +222,7 @@ public class SimulationTest : MonoBehaviour
         clients[shot.PlayerShotID].health -= DamagePerShot;
         Debug.Log(clients[shot.PlayerShotID].health);
         bool playerDied = clients[shot.PlayerShotID].health <= 0;
-        var clientPorts = clientManager.cubeClients.Values.Select(x => x.recvChannel).ToList();
+        // var clientPorts = clientManager.cubeClients.Values.Select(x => x.channel).ToList();
         BroadcastShot(shot, playerDied);
     }
 
@@ -232,10 +233,10 @@ public class SimulationTest : MonoBehaviour
             ShotId = shotCount, UserID = shot.UserID, PlayerShotID = shot.PlayerShotID, PlayerDied = playerDied
         };
         clients[shot.UserID].unackedShotBroadcasts[s] = new List<int>(); 
-        foreach (var client in clientManager.cubeClients)
+        foreach (var client in clients)
         {
-            int port = client.Value.recvPort;
-            Channel channel = client.Value.recvChannel;
+            int port = client.Value.destPort;
+            Channel channel = client.Value.channel;
             var packet = Packet.Obtain();
             Serializer.ShotBroadcastMessage(packet.buffer, shot, playerDied);
             packet.buffer.Flush();
@@ -258,7 +259,7 @@ public class SimulationTest : MonoBehaviour
             clients[shotBroadcast.UserID].unackedShotBroadcasts.Remove(shotBroadcast);
     }
 
-    private void StoreCommands(int userID, CubeClient cubeClient, List<Commands> commandsList)
+    private void StoreCommands(int userID, ServerClientInfo client, List<Commands> commandsList)
     {
         var packet = Packet.Obtain();
                 
@@ -276,13 +277,13 @@ public class SimulationTest : MonoBehaviour
         packet.buffer.Flush();
 
         string serverIP = "127.0.0.1";
-        var remoteEp = new IPEndPoint(IPAddress.Parse(serverIP), cubeClient.recvPort);
-        cubeClient.recvChannel.Send(packet, remoteEp);
+        var remoteEp = new IPEndPoint(IPAddress.Parse(serverIP), client.destPort);
+        client.channel.Send(packet, remoteEp);
 
         packet.Free();
     }
 
-    private void StoreShots(int userID, CubeClient cubeClient, List<Shot> shotsList)
+    private void StoreShots(int userID, ServerClientInfo client, List<Shot> shotsList)
     {
         var packet = Packet.Obtain();
         
@@ -299,9 +300,18 @@ public class SimulationTest : MonoBehaviour
         packet.buffer.Flush();
 
         string serverIP = "127.0.0.1";
-        var remoteEp = new IPEndPoint(IPAddress.Parse(serverIP), cubeClient.recvPort);
-        cubeClient.recvChannel.Send(packet, remoteEp);
+        var remoteEp = new IPEndPoint(IPAddress.Parse(serverIP), client.destPort);
+        client.channel.Send(packet, remoteEp);
 
         packet.Free();
+    }
+
+    public void OnDestroy()
+    {
+        playerJoinChannel.Disconnect();
+        foreach (var cli in clients)
+        {
+            cli.Value.channel.Disconnect();
+        }
     }
 }

@@ -34,6 +34,24 @@ public class Serializer
         return buffer.GetInt();
     }
 
+    public static void PlayerConnectResponse(BitBuffer buffer, int userID, int srvPort, int cliPort)
+    {
+        buffer.PutByte((byte)PacketType.PLAYER_CONNECT);
+        buffer.PutInt(userID);
+        buffer.PutInt(srvPort);
+        buffer.PutInt(cliPort);
+    }
+
+    public static int[] PlayerConnectResponseDeserialize(BitBuffer buffer)
+    {
+        int[] resp = new int[3];
+        buffer.GetByte(); // PlayerConnect
+        resp[0] = buffer.GetInt(); // userID
+        resp[1] = buffer.GetInt(); // srvPort
+        resp[2] = buffer.GetInt(); // cliPort
+        return resp;
+    }
+
     public static void PlayerJoinedSerialize(BitBuffer buffer, PlayerJoined playerJoined)// , int sendPort, int recvPort)
     {
         buffer.PutByte((byte)PacketType.PLAYER_JOINED);

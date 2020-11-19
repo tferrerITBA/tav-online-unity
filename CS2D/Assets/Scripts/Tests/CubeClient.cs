@@ -8,10 +8,9 @@ using Random = UnityEngine.Random;
 
 public class CubeClient : MonoBehaviour
 {
-    public int sendPort;
-    public int recvPort;
-    public Channel sendChannel;
-    public Channel recvChannel;
+    public int srvPort;
+    public int cliPort;
+    public Channel channel;
 
     public int userID;
     public int displaySeq;
@@ -44,12 +43,11 @@ public class CubeClient : MonoBehaviour
 
     private Commands currentCommands;
 
-    public void Initialize(int sendPort, int recvPort, int userID, int cubesLayer)
+    public void Initialize(int srvPort, int cliPort, int userID, int cubesLayer)
     {
-        this.sendPort = sendPort;
-        this.sendChannel = new Channel(sendPort);
-        this.recvPort = recvPort;
-        this.recvChannel = new Channel(recvPort);
+        this.srvPort = srvPort;
+        this.cliPort = cliPort;
+        this.channel = new Channel(cliPort);
         this.userID = userID;
         gameObject.layer = cubesLayer;
         shotsLayer = LayerMask.GetMask(LayerMask.LayerToName(cubesLayer));
@@ -60,7 +58,7 @@ public class CubeClient : MonoBehaviour
 
     private void Update()
     {
-        var packet = recvChannel.GetPacket();
+        var packet = channel.GetPacket();
 
         while (packet != null)
         {
@@ -85,7 +83,7 @@ public class CubeClient : MonoBehaviour
                 AckShotBroadcast();
             }
             
-            packet = recvChannel.GetPacket();
+            packet = channel.GetPacket();
         }
 
         ReadClientInput();
@@ -144,8 +142,8 @@ public class CubeClient : MonoBehaviour
         packet.buffer.Flush();
 
         string serverIP = "127.0.0.1";
-        var remoteEp = new IPEndPoint(IPAddress.Parse(serverIP), sendPort);
-        sendChannel.Send(packet, remoteEp);
+        var remoteEp = new IPEndPoint(IPAddress.Parse(serverIP), srvPort);
+        channel.Send(packet, remoteEp);
         packet.Free();
 
         currentCommands.Seq++;
@@ -212,8 +210,8 @@ public class CubeClient : MonoBehaviour
                 packet.buffer.Flush();
 
                 string serverIP = "127.0.0.1";
-                var remoteEp = new IPEndPoint(IPAddress.Parse(serverIP), sendPort);
-                sendChannel.Send(packet, remoteEp);
+                var remoteEp = new IPEndPoint(IPAddress.Parse(serverIP), srvPort);
+                channel.Send(packet, remoteEp);
                 packet.Free();
 
                 shotSeq++;
@@ -344,8 +342,7 @@ public class CubeClient : MonoBehaviour
     }
 
     private void OnDestroy() {
-        sendChannel.Disconnect();
-        recvChannel.Disconnect();
+        channel.Disconnect();
     }
     
     private void AckShotBroadcast()
@@ -355,8 +352,8 @@ public class CubeClient : MonoBehaviour
         newPacket.buffer.Flush();
 
         string serverIP = "127.0.0.1";
-        var remoteEp = new IPEndPoint(IPAddress.Parse(serverIP), sendPort);
-        sendChannel.Send(newPacket, remoteEp);
+        var remoteEp = new IPEndPoint(IPAddress.Parse(serverIP), srvPort);
+        channel.Send(newPacket, remoteEp);
         newPacket.Free();
     }
 }

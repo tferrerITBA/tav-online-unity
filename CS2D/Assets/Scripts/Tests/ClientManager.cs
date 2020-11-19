@@ -6,10 +6,13 @@ using Random = UnityEngine.Random;
 
 public class ClientManager : MonoBehaviour
 {
-    public int port = 8998;
+    public const int Port = 8998;
     public Channel channel;
-
-    public Dictionary<int, CubeClient> cubeClients = new Dictionary<int, CubeClient>();
+    
+    public CubeClient clientPrefab;
+    private Dictionary<int, CubeClient> cubeClients = new Dictionary<int, CubeClient>();
+    private int startingLayer = 9;
+    private int clientCount = 0;
 
     public Dictionary<int, CubeClient> CubeClients => cubeClients;
 
@@ -19,7 +22,7 @@ public class ClientManager : MonoBehaviour
     
     void Start()
     {
-        channel = new Channel(port);
+        channel = new Channel(Port);
     }
 
     // Update is called once per frame
@@ -52,6 +55,27 @@ public class ClientManager : MonoBehaviour
             
             packet.Free();
         }
+
+        var resp = channel.GetPacket();
+        if (resp != null)
+        {
+            var responseData = Serializer.PlayerConnectResponseDeserialize(resp.buffer);
+            clientCount++;
+            var userID = responseData[0];
+            var srvPort = responseData[1];
+            var cliPort = responseData[2];
+            InstantiateClient(userID, srvPort, cliPort);
+        }
+    }
+    
+    private void InstantiateClient(int userID, int srvPort, int cliPort)
+    {
+        CubeClient cubeClientComponent = Instantiate(clientPrefab);
+        CubeClients.Add(userID, cubeClientComponent);
+            
+        cubeClientComponent.Initialize(srvPort, cliPort, userID,
+            gameObject.layer + clientCount);
+        cubeClientComponent.gameObject.SetActive(true);
     }
 
     private void OnDestroy()
