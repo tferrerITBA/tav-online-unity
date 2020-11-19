@@ -277,7 +277,7 @@ public class Serializer
     
     private static void DeserializeShotBroadcast(BitBuffer buffer, ShotBroadcast shotBroadcast)
     {
-        shotBroadcast.Seq = buffer.GetInt();
+        shotBroadcast.ShotId = buffer.GetInt();
         shotBroadcast.UserID = buffer.GetInt();
         shotBroadcast.PlayerShotID = buffer.GetInt();
         shotBroadcast.PlayerDied = buffer.GetInt() > 0;
@@ -295,7 +295,7 @@ public class Serializer
     public static void ClientSerializeShotBroadcastAck(ShotBroadcast shotBroadcast, BitBuffer buffer)
     {
         buffer.PutByte((byte) PacketType.SHOT_BROADCAST_ACK);
-        buffer.PutInt(shotBroadcast.Seq);
+        buffer.PutInt(shotBroadcast.ShotId);
         buffer.PutInt(shotBroadcast.UserID);
         buffer.PutInt(shotBroadcast.PlayerShotID);
         buffer.PutInt(shotBroadcast.PlayerDied ? 1 : 0);

@@ -8,7 +8,7 @@ using UnityEngine;
 
 public class ShotBroadcast
 {
-    private int seq;
+    private int shotId;
     private int userID;
     private int playerShotID;
     private bool playerDied;
@@ -17,10 +17,10 @@ public class ShotBroadcast
     {
     }
     
-    public int Seq
+    public int ShotId
     {
-        get => seq;
-        set => seq = value;
+        get => shotId;
+        set => shotId = value;
     }
 
     public int UserID
@@ -50,14 +50,14 @@ public class ShotBroadcast
             return false;
         }
 
-        return seq == other.Seq && userID == other.UserID && playerShotID == other.PlayerShotID
+        return shotId == other.ShotId && userID == other.UserID && playerShotID == other.PlayerShotID
                && playerDied == other.playerDied;
     }
 
     public override int GetHashCode()
     {
         int hash = 13;
-        hash = (hash * 7) + seq.GetHashCode();
+        hash = (hash * 7) + shotId.GetHashCode();
         hash = (hash * 7) + userID.GetHashCode();
         hash = (hash * 7) + playerShotID.GetHashCode();
         hash = (hash * 7) + playerDied.GetHashCode();

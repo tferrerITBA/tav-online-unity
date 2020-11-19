@@ -37,6 +37,12 @@ public class SimulationTest : MonoBehaviour
 
     public float gravity = -9.81f;
     private const int DamagePerShot = 10;
+    private int _shotCount = 0;
+
+    public float ShotAckTimeout = 1f;
+    public float ShotAckTime;
+    public float PlayerJoinedAckTimeout = 1f;
+    public float PlayerJoinedAckTime;
 
     // Start is called before the first frame update
     void Start() {
@@ -208,6 +214,7 @@ public class SimulationTest : MonoBehaviour
 
     private void ExecuteShot(Shot shot)
     {
+        _shotCount++;
         clients[shot.PlayerShotID].health -= DamagePerShot;
         Debug.Log(clients[shot.PlayerShotID].health);
         bool playerDied = clients[shot.PlayerShotID].health <= 0;
@@ -219,7 +226,7 @@ public class SimulationTest : MonoBehaviour
     {
         ShotBroadcast s = new ShotBroadcast
         {
-            Seq = shot.Seq, UserID = shot.UserID, PlayerShotID = shot.PlayerShotID, PlayerDied = playerDied
+            ShotId = _shotCount, UserID = shot.UserID, PlayerShotID = shot.PlayerShotID, PlayerDied = playerDied
         };
         clients[shot.UserID].unackedShotBroadcasts[s] = new List<int>(); 
         foreach (var client in clientManager.cubeClients)

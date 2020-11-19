@@ -81,14 +81,8 @@ public class CubeClient : MonoBehaviour
                 {
                     // An animation or an effect could be shown
                 }
-                var newPacket = Packet.Obtain();
-                Serializer.ClientSerializeShotBroadcastAck(shotBroadcast, newPacket.buffer);
-                newPacket.buffer.Flush();
 
-                string serverIP = "127.0.0.1";
-                var remoteEp = new IPEndPoint(IPAddress.Parse(serverIP), sendPort);
-                sendChannel.Send(newPacket, remoteEp);
-                newPacket.Free();
+                AckShotBroadcast();
             }
             
             packet = recvChannel.GetPacket();
@@ -352,5 +346,17 @@ public class CubeClient : MonoBehaviour
     private void OnDestroy() {
         sendChannel.Disconnect();
         recvChannel.Disconnect();
+    }
+    
+    private void AckShotBroadcast()
+    {
+        var newPacket = Packet.Obtain();
+        Serializer.ClientSerializeShotBroadcastAck(shotBroadcast, newPacket.buffer);
+        newPacket.buffer.Flush();
+
+        string serverIP = "127.0.0.1";
+        var remoteEp = new IPEndPoint(IPAddress.Parse(serverIP), sendPort);
+        sendChannel.Send(newPacket, remoteEp);
+        newPacket.Free();
     }
 }
