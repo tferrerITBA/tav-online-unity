@@ -218,6 +218,8 @@ public class CubeClient : MonoBehaviour
                 var remoteEp = new IPEndPoint(IPAddress.Parse(serverIP), sendPort);
                 sendChannel.Send(packet, remoteEp);
                 packet.Free();
+
+                shotSeq++;
             }
             
             shotCooldown = 0;
