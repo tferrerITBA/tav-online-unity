@@ -23,7 +23,7 @@ public class ClientManager : MonoBehaviour
     void Start()
     {
         channel = new Channel(clientPort);
-        serverRemote = new IPEndPoint(IPAddress.Parse(serverIP), SimulationTest.PlayerJoinPort);
+        serverRemote = new IPEndPoint(IPAddress.Parse(serverIP), ServerEntity.PlayerJoinPort);
     }
 
     // Update is called once per frame

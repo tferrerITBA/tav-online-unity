@@ -13,7 +13,7 @@ using Vector3 = UnityEngine.Vector3;
  * y lo mato o no. Mandar el ack. Mandar un ack de ese broadcast.
  */
 
-public class SimulationTest : MonoBehaviour
+public class ServerEntity : MonoBehaviour
 {
     private Dictionary<int, ServerClientInfo> clients = new Dictionary<int, ServerClientInfo>();
     
@@ -21,14 +21,14 @@ public class SimulationTest : MonoBehaviour
     private Channel playerJoinChannel;
     public int clientPort = 9000;
     
-    public int clientCount;
+    private int clientCount;
     
-    public int pps = 10;
+    private int pps = 10;
     private float sendRate;
     
     private float accum;
     private float serverTime;
-    public int seq; // Next snapshot to send
+    private int seq; // Next snapshot to send
     private bool serverConnected = true;
 
     public CharacterController cubePrefab;
@@ -38,7 +38,7 @@ public class SimulationTest : MonoBehaviour
 
     public float gravity = -9.81f;
     private const int DamagePerShot = 10;
-    private int shotCount = 0;
+    private int shotCount;
 
     public float ShotAckTimeout = 1f;
     public float ShotAckTime;
