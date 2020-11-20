@@ -42,12 +42,6 @@ public class Serializer
         buffer.PutInt(srvPort);
     }
 
-    public static void PlayerConnectResponseAck(BitBuffer buffer, int userID)
-    {
-        buffer.PutByte((byte) PacketType.PLAYER_CONNECT_ACK);
-        buffer.PutInt(userID);
-    }
-
     public static int[] PlayerConnectResponseDeserialize(BitBuffer buffer)
     {
         int[] resp = new int[2];
