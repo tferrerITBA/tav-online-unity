@@ -8,8 +8,7 @@ using Random = UnityEngine.Random;
 
 public class CubeClient : MonoBehaviour
 {
-    public int srvPort;
-    public int cliPort;
+    public IPEndPoint serverEndpoint;
     public Channel channel;
 
     public int userID;
@@ -43,10 +42,9 @@ public class CubeClient : MonoBehaviour
 
     private Commands currentCommands;
 
-    public void Initialize(int srvPort, int cliPort, int userID, int cubesLayer, Channel channel)
+    public void Initialize(string srvIP, int srvPort, int userID, int cubesLayer, Channel channel)
     {
-        this.srvPort = srvPort;
-        this.cliPort = cliPort;
+        this.serverEndpoint = new IPEndPoint(IPAddress.Parse(srvIP), srvPort);
         this.channel = channel;
         this.userID = userID;
         gameObject.layer = cubesLayer;
@@ -140,9 +138,8 @@ public class CubeClient : MonoBehaviour
         var packet = Packet.Obtain();
         Serializer.ClientSerializeInput(commands, packet.buffer);
         packet.buffer.Flush();
-
-        string serverIP = "127.0.0.1";
-        var remoteEp = new IPEndPoint(IPAddress.Parse(serverIP), srvPort);
+        
+        var remoteEp = serverEndpoint;
         channel.Send(packet, remoteEp);
         packet.Free();
 
@@ -208,9 +205,8 @@ public class CubeClient : MonoBehaviour
                 var packet = Packet.Obtain();
                 Serializer.ClientSerializeShot(shots, packet.buffer);
                 packet.buffer.Flush();
-
-                string serverIP = "127.0.0.1";
-                var remoteEp = new IPEndPoint(IPAddress.Parse(serverIP), srvPort);
+                
+                var remoteEp = serverEndpoint;
                 channel.Send(packet, remoteEp);
                 packet.Free();
 
@@ -350,9 +346,8 @@ public class CubeClient : MonoBehaviour
         var newPacket = Packet.Obtain();
         Serializer.ClientSerializeShotBroadcastAck(shotBroadcast, newPacket.buffer);
         newPacket.buffer.Flush();
-
-        string serverIP = "127.0.0.1";
-        var remoteEp = new IPEndPoint(IPAddress.Parse(serverIP), srvPort);
+        
+        var remoteEp = serverEndpoint;
         channel.Send(newPacket, remoteEp);
         newPacket.Free();
     }

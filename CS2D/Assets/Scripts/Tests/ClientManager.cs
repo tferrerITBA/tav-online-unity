@@ -62,7 +62,7 @@ public class ClientManager : MonoBehaviour
             var responseData = Serializer.PlayerConnectResponseDeserialize(resp.buffer);
             var userID = responseData[0];
             var srvPort = responseData[1];
-            InstantiateClient(userID, srvPort, clientPort, channel);
+            InstantiateClient(userID, srvPort, channel);
             
             clientCount++;
             clientPort += 2;
@@ -70,13 +70,13 @@ public class ClientManager : MonoBehaviour
         }
     }
     
-    private void InstantiateClient(int userID, int srvPort, int cliPort, Channel clientChannel)
+    private void InstantiateClient(int userID, int srvPort, Channel clientChannel)
     {
         CubeClient cubeClientComponent = Instantiate(clientPrefab);
         CubeClients.Add(userID, cubeClientComponent);
-            
-        cubeClientComponent.Initialize(srvPort, cliPort, userID,
-            startingLayer + clientCount, clientChannel);
+
+        var layer = startingLayer + clientCount;
+        cubeClientComponent.Initialize(serverIP, srvPort, userID, layer, clientChannel);
         cubeClientComponent.gameObject.SetActive(true);
     }
 
