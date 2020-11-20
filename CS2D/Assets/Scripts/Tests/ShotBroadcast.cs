@@ -50,17 +50,13 @@ public class ShotBroadcast
             return false;
         }
 
-        return shotId == other.ShotId && userID == other.UserID && playerShotID == other.PlayerShotID
-               && playerDied == other.playerDied;
+        return shotId == other.ShotId;
     }
 
     public override int GetHashCode()
     {
         int hash = 13;
         hash = (hash * 7) + shotId.GetHashCode();
-        hash = (hash * 7) + userID.GetHashCode();
-        hash = (hash * 7) + playerShotID.GetHashCode();
-        hash = (hash * 7) + playerDied.GetHashCode();
         return hash;
     }
 }

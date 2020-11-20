@@ -19,7 +19,7 @@ public class ServerEntity : MonoBehaviour
     
     public const int PlayerJoinPort = 8999;
     private Channel playerJoinChannel;
-    public int clientPort = 9000;
+    public int serverToClientPort = 9000;
     
     private int clientCount;
     
@@ -44,6 +44,8 @@ public class ServerEntity : MonoBehaviour
     public float ShotAckTime;
     public float PlayerJoinedAckTimeout = 1f;
     public float PlayerJoinedAckTime;
+    
+    private Dictionary<PlayerJoined, List<int>> pendingPlayerJoined = new Dictionary<PlayerJoined, List<int>>();
 
     // Start is called before the first frame update
     void Start() {
@@ -64,40 +66,60 @@ public class ServerEntity : MonoBehaviour
         if (packet != null)
         {
             int userID = Serializer.PlayerConnectDeserialize(packet.buffer);
-            var origPort = clientPort;
-            var dest = new IPEndPoint(packet.fromEndPoint.Address, packet.fromEndPoint.Port);
-
-            CharacterController newCube = Instantiate(cubePrefab, transform); // instantiate server cube (gray)
-            clients.Add(userID, new ServerClientInfo(userID, origPort, dest, newCube));
-            
-            clientCount++;
-            clientPort += 2;
-
-            var playerConnectResponse = Packet.Obtain();
-            Serializer.PlayerConnectResponse(playerConnectResponse.buffer, userID, origPort);
-            playerConnectResponse.buffer.Flush();
-            
-            playerJoinChannel.Send(playerConnectResponse, dest);
-
-            packet.Free();
-
-            PlayerJoined playerJoined = new PlayerJoined(userID, clientCount, seq, serverTime);
-            foreach (var clientPair in clients)
-            {
-                var playerJoinedPacket = Packet.Obtain();
-                Serializer.PlayerJoinedSerialize(playerJoinedPacket.buffer, playerJoined);
-                playerJoinedPacket.buffer.Flush();
-                
-                var remoteEp = clientPair.Value.dest;
-                clientPair.Value.channel.Send(playerJoinedPacket, remoteEp);
-
-                packet.Free();
-            }
+            var clientInfo = new IPEndPoint(packet.fromEndPoint.Address, packet.fromEndPoint.Port);
+            RegisterClient(userID, clientInfo);
+            BroadcastPlayerJoined(userID);
         }
 
         if (serverConnected)
         {
             UpdateServer();
+        }
+    }
+
+    private void RegisterClient(int userID, IPEndPoint clientInfo)
+    {
+        var origPort = serverToClientPort;
+        CharacterController newCube = Instantiate(cubePrefab, transform); // instantiate server cube (gray)
+        clients.Add(userID, new ServerClientInfo(userID, origPort, clientInfo, newCube));
+            
+        clientCount++;
+        serverToClientPort += 2;
+
+        var playerConnectResponse = Packet.Obtain();
+        Serializer.PlayerConnectResponse(playerConnectResponse.buffer, userID, origPort);
+        playerConnectResponse.buffer.Flush();
+            
+        playerJoinChannel.Send(playerConnectResponse, clientInfo);
+        playerConnectResponse.Free();
+    }
+
+    private void BroadcastPlayerJoined(int userID)
+    {
+        PlayerJoined playerJoined = new PlayerJoined(userID, clientCount, seq, serverTime);
+        pendingPlayerJoined[playerJoined] = new List<int>(clients.Count);
+        
+        foreach (var clientPair in clients)
+        {
+            var playerJoinedPacket = Packet.Obtain();
+            Serializer.PlayerJoinedSerialize(playerJoinedPacket.buffer, playerJoined);
+            playerJoinedPacket.buffer.Flush();
+                
+            var remoteEp = clientPair.Value.dest;
+            clientPair.Value.channel.Send(playerJoinedPacket, remoteEp);
+
+            playerJoinedPacket.Free();
+            pendingPlayerJoined[playerJoined].Add(clientPair.Key);
+        }
+    }
+
+    private void AckPlayerJoinedBroadcast(int userID, PlayerJoined playerJoined)
+    {
+        var list = pendingPlayerJoined[playerJoined];
+        list.RemoveAll(x => x == userID);
+        if (list.Count == 0)
+        {
+            pendingPlayerJoined.Remove(playerJoined);
         }
     }
 
@@ -146,11 +168,15 @@ public class ServerEntity : MonoBehaviour
                 List<Commands> commandsList = new List<Commands>();
                 List<Shot> shotsList = new List<Shot>();
                 ShotBroadcast s = new ShotBroadcast();
-                var packetType = Serializer.ServerDeserializeInput(buffer, commandsList, shotsList, s);
+                PlayerJoined p = new PlayerJoined();
+                var packetType = Serializer.ServerDeserializeInput(buffer, commandsList, shotsList, s, p);
                 // TODO: use generics to avoid code repetition,
                 // as shots and commands are handled the same way
                 switch (packetType)
                 {
+                    case PacketType.PLAYER_JOINED_ACK:
+                        AckPlayerJoinedBroadcast(userID, p);
+                        break;
                     case PacketType.COMMANDS:
                         StoreCommands(userID, cubeClient, commandsList);
                         break;

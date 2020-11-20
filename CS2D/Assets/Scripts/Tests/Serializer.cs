@@ -10,6 +10,7 @@ public enum PacketType
     PLAYER_CONNECT = 24,
     PLAYER_CONNECT_ACK = 41,
     PLAYER_JOINED = 25,
+    PLAYER_JOINED_ACK = 26,
     PLAYER_DISCONNECT = 35,
     COMMANDS_ACK_MESSAGE = 0,
     UPDATE_MESSAGE = 1,
@@ -247,9 +248,14 @@ public class Serializer
     }
 
     public static PacketType ServerDeserializeInput(BitBuffer buffer, List<Commands> commandsList,
-        List<Shot> shotsList, ShotBroadcast shotBroadcast)
+        List<Shot> shotsList, ShotBroadcast shotBroadcast, PlayerJoined p)
     {
         var messageType = buffer.GetByte();
+        if (messageType == (byte) PacketType.PLAYER_JOINED_ACK)
+        {
+            DeserializePlayerJoinedAck(p, buffer);
+            return PacketType.PLAYER_JOINED_ACK;
+        }
         if (messageType == (byte) PacketType.COMMANDS)
         {
             DeserializeCommands(commandsList, buffer);
@@ -268,6 +274,12 @@ public class Serializer
         }
 
         return PacketType.PLAYER_DISCONNECT;
+    }
+
+    private static void DeserializePlayerJoinedAck(PlayerJoined p, BitBuffer buffer)
+    {
+        p.UserID = buffer.GetInt();
+        // CHECK IF MORE FIELDS ARE NEEDED
     }
 
     public static void ServerSerializeAck(BitBuffer buffer, int commandSequence)
