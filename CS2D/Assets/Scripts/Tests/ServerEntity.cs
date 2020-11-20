@@ -120,11 +120,11 @@ public class ServerEntity : MonoBehaviour
 
     private void AckPlayerJoinedBroadcast(int userID, PlayerJoined playerJoined)
     {
-        var list = pendingPlayerJoined[userID];
+        var list = pendingPlayerJoined[playerJoined.UserID];
         list.RemoveAll(x => x == userID);
         if (list.Count == 0)
         {
-            pendingPlayerJoined.Remove(userID);
+            pendingPlayerJoined.Remove(playerJoined.UserID);
             clients[playerJoined.UserID].Confirm();
         }
     }
