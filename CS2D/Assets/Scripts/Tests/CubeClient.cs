@@ -63,6 +63,10 @@ public class CubeClient : MonoBehaviour
             var buffer = packet.buffer;
             var pt = Serializer.ClientDeserialize(interpolationBuffer, playersToInstantiate, buffer,
                 displaySeq, commands, currentCommands.Seq, shots, shotSeq, shotBroadcast);
+            if (pt == PacketType.PLAYER_JOINED)
+            {
+                AckPlayerJoined();
+            }
             if (pt == PacketType.UPDATE_MESSAGE && ownCube) // a Snapshot was just received
             {
                 CorrectPosition(interpolationBuffer[interpolationBuffer.Count - 1].UserStates[userID]);
@@ -350,5 +354,16 @@ public class CubeClient : MonoBehaviour
         var remoteEp = serverEndpoint;
         channel.Send(newPacket, remoteEp);
         newPacket.Free();
+    }
+
+    private void AckPlayerJoined()
+    {
+        var packet = Packet.Obtain();
+        Serializer.PlayerJoinedAck(packet.buffer, playersToInstantiate.UserID);
+        packet.buffer.Flush();
+        
+        var remoteEp = serverEndpoint;
+        channel.Send(packet, remoteEp);
+        packet.Free();
     }
 }

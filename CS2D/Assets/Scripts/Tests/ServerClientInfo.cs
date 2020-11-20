@@ -9,6 +9,7 @@ public class ServerClientInfo
     public int userID;
     public Channel channel;
     public IPEndPoint dest;
+    private bool confirmed;
     public int cmdSeqReceived;
     public int shotSeqReceived;
     public List<Commands> pendingCommands = new List<Commands>();
@@ -23,5 +24,13 @@ public class ServerClientInfo
         this.channel = new Channel(origPort);
         this.dest = dest;
         this.characterController = characterController;
+        this.confirmed = false;
+    }
+    
+    public bool Confirmed => confirmed;
+
+    public void Confirm()
+    {
+        confirmed = true;
     }
 }

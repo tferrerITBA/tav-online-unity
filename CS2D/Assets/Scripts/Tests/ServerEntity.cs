@@ -41,11 +41,11 @@ public class ServerEntity : MonoBehaviour
     private int shotCount;
 
     public float ShotAckTimeout = 1f;
-    public float ShotAckTime;
+    public float shotAckTime;
     public float PlayerJoinedAckTimeout = 1f;
-    public float PlayerJoinedAckTime;
+    public float playerJoinedAckTime;
     
-    private Dictionary<PlayerJoined, List<int>> pendingPlayerJoined = new Dictionary<PlayerJoined, List<int>>();
+    private Dictionary<int, List<int>> pendingPlayerJoined = new Dictionary<int, List<int>>();
 
     // Start is called before the first frame update
     void Start() {
@@ -68,8 +68,11 @@ public class ServerEntity : MonoBehaviour
             int userID = Serializer.PlayerConnectDeserialize(packet.buffer);
             var clientInfo = new IPEndPoint(packet.fromEndPoint.Address, packet.fromEndPoint.Port);
             RegisterClient(userID, clientInfo);
-            BroadcastPlayerJoined(userID);
+            BroadcastPlayerJoined(userID, clients.Keys.ToList());
         }
+
+        if (pendingPlayerJoined.Count > 0)
+            ResendTimeoutPlayerJoined();
 
         if (serverConnected)
         {
@@ -94,33 +97,56 @@ public class ServerEntity : MonoBehaviour
         playerConnectResponse.Free();
     }
 
-    private void BroadcastPlayerJoined(int userID)
+    private void BroadcastPlayerJoined(int userID, List<int> unacked)
     {
         PlayerJoined playerJoined = new PlayerJoined(userID, clientCount, seq, serverTime);
-        pendingPlayerJoined[playerJoined] = new List<int>(clients.Count);
+        pendingPlayerJoined[userID] = new List<int>(clients.Count);
         
-        foreach (var clientPair in clients)
+        foreach (var id in unacked)
         {
+            var clientInfo = clients[id];
             var playerJoinedPacket = Packet.Obtain();
             Serializer.PlayerJoinedSerialize(playerJoinedPacket.buffer, playerJoined);
             playerJoinedPacket.buffer.Flush();
                 
-            var remoteEp = clientPair.Value.dest;
-            clientPair.Value.channel.Send(playerJoinedPacket, remoteEp);
+            var remoteEp = clientInfo.dest;
+            clientInfo.channel.Send(playerJoinedPacket, remoteEp);
 
             playerJoinedPacket.Free();
-            pendingPlayerJoined[playerJoined].Add(clientPair.Key);
+            if (!pendingPlayerJoined[userID].Contains(id))
+                pendingPlayerJoined[userID].Add(id);
         }
     }
 
     private void AckPlayerJoinedBroadcast(int userID, PlayerJoined playerJoined)
     {
-        var list = pendingPlayerJoined[playerJoined];
+        var list = pendingPlayerJoined[userID];
         list.RemoveAll(x => x == userID);
         if (list.Count == 0)
         {
-            pendingPlayerJoined.Remove(playerJoined);
+            pendingPlayerJoined.Remove(userID);
+            clients[playerJoined.UserID].Confirm();
         }
+    }
+
+    private void ResendTimeoutPlayerJoined()
+    {
+        if (playerJoinedAckTime > PlayerJoinedAckTimeout)
+        {
+            playerJoinedAckTime = 0;
+            for (int i = 0; i < pendingPlayerJoined.Count; i++)
+            {
+                int userID = pendingPlayerJoined.Keys.ToList()[i];
+                var pendingAcks = pendingPlayerJoined[userID];
+                BroadcastPlayerJoined(userID, pendingAcks);
+            }
+            /*foreach (var playerJoinedPlusUnacked in pendingPlayerJoined)
+            {
+                BroadcastPlayerJoined(playerJoinedPlusUnacked.Key, playerJoinedPlusUnacked.Value);
+            }*/
+        }
+
+        playerJoinedAckTime += Time.deltaTime;
     }
 
     private void FixedUpdate()
@@ -197,12 +223,22 @@ public class ServerEntity : MonoBehaviour
         {
             foreach (var cubeClientPair in clients)
             {
+                if (!cubeClientPair.Value.Confirmed) // PlayerJoined not acked yet
+                    continue;
+                
                 int userID = cubeClientPair.Key;
                 var cubeClient = cubeClientPair.Value;
                 int lastCommandsReceived = clients[userID].cmdSeqReceived;
+                
+                Dictionary<int, ServerClientInfo> confirmedClients = clients.Where(
+                    x => x.Value.Confirmed).ToDictionary(
+                    x => x.Key,
+                    x => x.Value);
+                
                 // Serialize snapshot
                 var packet = Packet.Obtain();
-                Serializer.ServerWorldSerialize(clients, packet.buffer, seq,
+
+                Serializer.ServerWorldSerialize(confirmedClients, packet.buffer, seq,
                     serverTime, lastCommandsReceived);
                 packet.buffer.Flush();
                 

@@ -71,8 +71,8 @@ public class Serializer
     }
     
     public static void ServerWorldSerialize(Dictionary<int, ServerClientInfo> clients, BitBuffer buffer,
-        int seq, float time, int cmdSeq) {
-        
+        int seq, float time, int cmdSeq)
+    {
         buffer.PutByte((byte)PacketType.UPDATE_MESSAGE);
         buffer.PutInt(seq);
         buffer.PutFloat(time);
@@ -328,5 +328,11 @@ public class Serializer
         buffer.PutInt(shotBroadcast.UserID);
         buffer.PutInt(shotBroadcast.PlayerShotID);
         buffer.PutInt(shotBroadcast.PlayerDied ? 1 : 0);
+    }
+
+    public static void PlayerJoinedAck(BitBuffer buffer, int userID)
+    {
+        buffer.PutByte((byte) PacketType.PLAYER_JOINED_ACK);
+        buffer.PutInt(userID);
     }
 }
