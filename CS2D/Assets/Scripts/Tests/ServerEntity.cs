@@ -35,9 +35,7 @@ public class ServerEntity : MonoBehaviour
     public CharacterController cubePrefab;
     public CubeClient clientPrefab;
 
-    public ClientManager clientManager;
-
-    public float gravity = -9.81f;
+    private float playerSpeed = 5;
     private const int DamagePerShot = 10;
     private int shotCount;
 
@@ -278,7 +276,7 @@ public class ServerEntity : MonoBehaviour
         move.z += commands.GetZDirection() * Time.fixedDeltaTime;
 
         cubeCharacterCtrl.transform.rotation = Quaternion.Euler(0, commands.Rotation, 0);
-        move = cubeCharacterCtrl.transform.TransformDirection(move);
+        move = cubeCharacterCtrl.transform.TransformDirection(move) * playerSpeed;
         cubeCharacterCtrl.Move(move);
     }
 

@@ -36,7 +36,7 @@ public class CubeClient : MonoBehaviour
     private RaycastHit shotRaycastHit;
 
     public Color clientColor;
-    public float speed = 5;
+    public float playerSpeed = 5;
     
     public int interpolationCount = 2;
 
@@ -239,7 +239,7 @@ public class CubeClient : MonoBehaviour
         move.x += commandsToApply.GetXDirection() * Time.fixedDeltaTime;
         move.z += commandsToApply.GetZDirection() * Time.fixedDeltaTime;
 
-        move = ownCube.transform.TransformDirection(move);
+        move = ownCube.transform.TransformDirection(move) * playerSpeed;
         ownCube.Move(move);
     }
     
