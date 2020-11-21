@@ -31,6 +31,7 @@ public class ClientManager : MonoBehaviour
         catch (Exception e)
         {
             PlayerPrefs.SetString("connectionError", e.Message);
+            PlayerPrefs.Save();
             SceneManager.LoadScene(0); // back to main menu
         }
     }

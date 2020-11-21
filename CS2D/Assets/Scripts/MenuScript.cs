@@ -19,6 +19,8 @@ public class MenuScript : MonoBehaviour
         {
             errorText.text = error;
             errorGO.SetActive(true);
+            PlayerPrefs.SetString("connectionError", "");
+            PlayerPrefs.Save();
         }
     }
 
