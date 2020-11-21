@@ -36,3 +36,6 @@ sysinfo.txt
 CS2D/Library
 CS2D/Temp
 CS2D/obj
+
+.DS_Store
+build

@@ -49,6 +49,11 @@ public class ServerEntity : MonoBehaviour
     private Dictionary<int, List<int>> pendingPlayerJoined = new Dictionary<int, List<int>>();
     
     void Awake() {
+        if (!(PlayerPrefs.GetInt("isServer") > 0))
+        {
+            Destroy(gameObject);
+            return;
+        }
         try
         {
             playerJoinChannel = new Channel(PlayerJoinPort);

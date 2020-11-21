@@ -12,6 +12,11 @@ public class MouseLook : MonoBehaviour
 
     void Start()
     {
+        if (PlayerPrefs.GetInt("isServer") > 0)
+        {
+            enabled = false;
+            return;
+        }
         Cursor.lockState = CursorLockMode.Locked;
     }
 

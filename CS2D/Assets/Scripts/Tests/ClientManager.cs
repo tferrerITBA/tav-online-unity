@@ -21,6 +21,11 @@ public class ClientManager : MonoBehaviour
 
     void Start()
     {
+        if (PlayerPrefs.GetInt("isServer") > 0)
+        {
+            Destroy(gameObject);
+            return;
+        }
         try
         {
             serverIP = PlayerPrefs.GetString("serverIP", "127.0.0.1");
