@@ -2,28 +2,37 @@
 using System.Collections.Generic;
 using System.Net;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using Random = UnityEngine.Random;
 
 public class ClientManager : MonoBehaviour
 {
-    public string serverIP = "127.0.0.1";
+    private string serverIP;
     private IPEndPoint serverRemote;
-    public int clientPort = 9001;
-    public Channel channel;
+    private int clientPort;
+    private Channel channel;
     
     public CubeClient clientPrefab;
-    private Dictionary<int, CubeClient> cubeClients = new Dictionary<int, CubeClient>();
+    // private Dictionary<int, CubeClient> cubeClients = new Dictionary<int, CubeClient>();
     private int startingLayer = 9;
     private int clientCount;
 
-    public Dictionary<int, CubeClient> CubeClients => cubeClients;
-
-    public int interpolationCount = 2;
+    // public Dictionary<int, CubeClient> CubeClients => cubeClients;
 
     void Start()
     {
-        channel = new Channel(clientPort);
-        serverRemote = new IPEndPoint(IPAddress.Parse(serverIP), ServerEntity.PlayerJoinPort);
+        try
+        {
+            serverIP = PlayerPrefs.GetString("serverIP", "127.0.0.1");
+            clientPort = PlayerPrefs.GetInt("clientPort", 9001);
+            channel = new Channel(clientPort);
+            serverRemote = new IPEndPoint(IPAddress.Parse(serverIP), ServerEntity.PlayerJoinPort);
+        }
+        catch (Exception e)
+        {
+            PlayerPrefs.SetString("connectionError", e.Message);
+            SceneManager.LoadScene(0); // back to main menu
+        }
     }
 
     // Update is called once per frame
@@ -73,7 +82,7 @@ public class ClientManager : MonoBehaviour
     private void InstantiateClient(int userID, int srvPort, Channel clientChannel)
     {
         CubeClient cubeClientComponent = Instantiate(clientPrefab);
-        CubeClients.Add(userID, cubeClientComponent);
+        // CubeClients.Add(userID, cubeClientComponent);
 
         var layer = startingLayer + clientCount;
         cubeClientComponent.Initialize(serverIP, srvPort, userID, layer, clientChannel);

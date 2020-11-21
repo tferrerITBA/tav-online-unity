@@ -5,6 +5,7 @@ using System.Linq;
 using System.Net;
 using Tests;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using Vector3 = UnityEngine.Vector3;
 
 /*
@@ -28,7 +29,7 @@ public class ServerEntity : MonoBehaviour
     
     private float accum;
     private float serverTime;
-    private int seq; // Next snapshot to send
+    public int seq; // Next snapshot to send
     private bool serverConnected = true;
 
     public CharacterController cubePrefab;
@@ -46,11 +47,19 @@ public class ServerEntity : MonoBehaviour
     public float playerJoinedAckTime;
     
     private Dictionary<int, List<int>> pendingPlayerJoined = new Dictionary<int, List<int>>();
-
-    // Start is called before the first frame update
-    void Start() {
+    
+    void Awake() {
+        try
+        {
+            playerJoinChannel = new Channel(PlayerJoinPort);
+        }
+        catch (Exception e)
+        {
+            PlayerPrefs.SetString("connectionError", e.Message);
+            SceneManager.LoadScene(0); // back to main menu
+        }
         sendRate = 1f / pps;
-        playerJoinChannel = new Channel(PlayerJoinPort);
+        
     }
 
     // Update is called once per frame
