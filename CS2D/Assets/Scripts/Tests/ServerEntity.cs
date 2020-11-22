@@ -371,6 +371,8 @@ public class ServerEntity : MonoBehaviour
 
     public void OnDestroy()
     {
+        if (playerJoinChannel == null)
+            return;
         playerJoinChannel.Disconnect();
         foreach (var cli in clients)
         {

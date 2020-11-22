@@ -97,6 +97,6 @@ public class ClientManager : MonoBehaviour
 
     private void OnDestroy()
     {
-        channel.Disconnect();
+        channel?.Disconnect();
     }
 }
