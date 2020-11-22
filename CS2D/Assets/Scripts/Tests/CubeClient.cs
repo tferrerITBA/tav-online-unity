@@ -29,7 +29,7 @@ public class CubeClient : MonoBehaviour
 
     public CharacterController ownCube;
     public int health = 100;
-    public float shotInterval = 1f;
+    public float shotInterval = 0.3f;
     public float shotCooldown = 0.1f;
     public LayerMask shotsLayer;
     public float shotMaxDistance;
@@ -47,7 +47,7 @@ public class CubeClient : MonoBehaviour
         this.serverEndpoint = new IPEndPoint(IPAddress.Parse(srvIP), srvPort);
         this.channel = channel;
         this.userID = userID;
-        gameObject.layer = cubesLayer;
+        SetLayer(gameObject, cubesLayer);
         shotsLayer = LayerMask.GetMask(LayerMask.LayerToName(cubesLayer));
         shotMaxDistance = 1000000f;
         clientColor = new Color(Random.value, Random.value, Random.value);
@@ -282,9 +282,9 @@ public class CubeClient : MonoBehaviour
                 }
 
                 player.name = userStatePair.Key.ToString();
-                player.layer = gameObject.layer;
-                Renderer rndr = player.GetComponent<Renderer>();
-                rndr.material.color = clientColor;
+                SetLayer(player, gameObject.layer);
+                // Renderer rndr = player.GetComponent<Renderer>();
+                // rndr.material.color = clientColor;
                 cubes.Add(userStatePair.Key, player);
                 if (playerJoined.PlayerCount == 1)
                 {
@@ -299,10 +299,10 @@ public class CubeClient : MonoBehaviour
         else // just instantiate the new player
         {
             var newPlayer = Instantiate(cubePrefab, transform);
-            newPlayer.layer = gameObject.layer;
+            SetLayer(newPlayer, gameObject.layer);
             newPlayer.name = playerJoined.UserID.ToString();
-            var rndr = newPlayer.GetComponent<Renderer>();
-            rndr.material.color = clientColor;
+            // var rndr = newPlayer.GetComponent<Renderer>();
+            // rndr.material.color = clientColor;
             cubes.Add(playerJoined.UserID, newPlayer);
         }
     }
@@ -365,5 +365,16 @@ public class CubeClient : MonoBehaviour
         var remoteEp = serverEndpoint;
         channel.Send(packet, remoteEp);
         packet.Free();
+    }
+
+    private static void SetLayer(GameObject go, int layer)
+    {
+        go.layer = layer;
+        foreach (Transform child in go.transform)
+        {
+            var childGO = child.gameObject;
+            childGO.layer = layer;
+            SetLayer(childGO, layer);
+        }
     }
 }

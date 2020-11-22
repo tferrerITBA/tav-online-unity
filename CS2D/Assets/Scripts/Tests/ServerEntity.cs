@@ -314,11 +314,14 @@ public class ServerEntity : MonoBehaviour
 
     private void AckBroadcastShot(int userID, ShotBroadcast shotBroadcast)
     {
-        var pendingAcks = clients[shotBroadcast.UserID].unackedShotBroadcasts[shotBroadcast];
-        pendingAcks.RemoveAll(
-            x => x == userID);
-        if (pendingAcks.Count == 0)
-            clients[shotBroadcast.UserID].unackedShotBroadcasts.Remove(shotBroadcast);
+        var pendingAcks = clients[shotBroadcast.UserID].unackedShotBroadcasts;
+        if (pendingAcks.ContainsKey(shotBroadcast))
+        {
+            pendingAcks[shotBroadcast].RemoveAll(
+                x => x == userID);
+            if (pendingAcks.Count == 0)
+                clients[shotBroadcast.UserID].unackedShotBroadcasts.Remove(shotBroadcast);
+        }
     }
 
     private void StoreCommands(int userID, ServerClientInfo client, List<Commands> commandsList)
