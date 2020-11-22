@@ -63,7 +63,7 @@ public class ServerEntity : MonoBehaviour
             SceneManager.LoadScene(0); // back to main menu
         }
         sendRate = 1f / pps;
-        
+        GameObject.FindGameObjectWithTag("Gun").SetActive(false);
     }
 
     // Update is called once per frame

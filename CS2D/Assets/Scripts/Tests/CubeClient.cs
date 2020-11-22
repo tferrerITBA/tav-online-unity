@@ -26,6 +26,8 @@ public class CubeClient : MonoBehaviour
 
     public GameObject cubePrefab;
     public GameObject playerCubePrefab;
+    private int cubesLayer;
+    public int ownPlayerLayer;
 
     public CharacterController ownCube;
     public int health = 100;
@@ -47,6 +49,7 @@ public class CubeClient : MonoBehaviour
         this.serverEndpoint = new IPEndPoint(IPAddress.Parse(srvIP), srvPort);
         this.channel = channel;
         this.userID = userID;
+        this.cubesLayer = cubesLayer;
         SetLayer(gameObject, cubesLayer);
         shotsLayer = LayerMask.GetMask(LayerMask.LayerToName(cubesLayer));
         shotMaxDistance = 1000000f;
@@ -282,24 +285,28 @@ public class CubeClient : MonoBehaviour
                 }
 
                 player.name = userStatePair.Key.ToString();
-                SetLayer(player, gameObject.layer);
                 // Renderer rndr = player.GetComponent<Renderer>();
                 // rndr.material.color = clientColor;
                 cubes.Add(userStatePair.Key, player);
-                if (playerJoined.PlayerCount == 1)
+                if (playerJoined.PlayerCount == 1) // TODO: replace w/ userID == userStatePair.Key  
                 {
+                    SetLayer(player, ownPlayerLayer);
                     var cam = GameObject.FindGameObjectWithTag("MainCamera").transform;
                     cam.SetParent(ownCube.transform);
                     cam.localPosition = new Vector3(0, 1, 0);
                     cam.localRotation = Quaternion.identity;
                     cam.GetComponent<MouseLook>().player = ownCube.transform;
                 }
+                else
+                {
+                    SetLayer(player, cubesLayer);
+                }
             }
         }
         else // just instantiate the new player
         {
             var newPlayer = Instantiate(cubePrefab, transform);
-            SetLayer(newPlayer, gameObject.layer);
+            SetLayer(newPlayer, cubesLayer);
             newPlayer.name = playerJoined.UserID.ToString();
             // var rndr = newPlayer.GetComponent<Renderer>();
             // rndr.material.color = clientColor;

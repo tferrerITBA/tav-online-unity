@@ -51,6 +51,7 @@ MonoBehaviour:
     type: 3}
   playerCubePrefab: {fileID: 5505638626294744671, guid: 907f2d2d904d24dc49abefdfc2e7d188,
     type: 3}
+  ownPlayerLayer: 29
   ownCube: {fileID: 0}
   health: 100
   shotInterval: 1
