@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using TMPro;
 using UnityEngine;
+using UnityEngine.Audio;
 using UnityEngine.SceneManagement;
 
 public class MenuScript : MonoBehaviour
@@ -11,6 +12,8 @@ public class MenuScript : MonoBehaviour
     public TMP_InputField clientPortInput;
     public GameObject errorGO;
     public TMP_Text errorText;
+
+    public AudioMixer audioMixer;
 
     private void Start()
     {
@@ -48,5 +51,11 @@ public class MenuScript : MonoBehaviour
     public void QuitGame()
     {
         Application.Quit();
+    }
+
+    public void ToggleAudioMute()
+    {
+        audioMixer.GetFloat("Volume", out var volume);
+        audioMixer.SetFloat("Volume", volume == 0 ? -80 : 0);
     }
 }
