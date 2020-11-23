@@ -64,13 +64,20 @@ public class CubeClient : MonoBehaviour
         while (packet != null)
         {
             var buffer = packet.buffer;
+            int playerDisconnect;
             var pt = Serializer.ClientDeserialize(interpolationBuffer, playersToInstantiate, buffer,
-                displaySeq, commands, currentCommands.Seq, shots, shotSeq, shotBroadcast);
+                displaySeq, commands, currentCommands.Seq, shots, shotSeq, shotBroadcast, out playerDisconnect);
             if (pt == PacketType.PLAYER_JOINED)
             {
                 AckPlayerJoined();
             }
-            if (pt == PacketType.UPDATE_MESSAGE && ownCube) // a Snapshot was just received
+            else if (pt == PacketType.PLAYER_DISCONNECT)
+            {
+                Destroy(cubes[playerDisconnect].gameObject);
+                if (playerDisconnect == userID)
+                    Destroy(this);
+            }
+            else if (pt == PacketType.UPDATE_MESSAGE && ownCube) // a Snapshot was just received
             {
                 CorrectPosition(interpolationBuffer[interpolationBuffer.Count - 1].UserStates[userID]);
             }
@@ -348,7 +355,14 @@ public class CubeClient : MonoBehaviour
         return currentSnapValue + (nextSnapValue - currentSnapValue) * t;
     }
 
-    private void OnDestroy() {
+    private void OnDestroy()
+    {
+        var packet = Packet.Obtain();
+        Serializer.PlayerDisconnectSerialize(packet.buffer, userID);
+        packet.buffer.Flush();
+        
+        channel.Send(packet, serverEndpoint);
+        packet.Free();
         channel.Disconnect();
     }
     

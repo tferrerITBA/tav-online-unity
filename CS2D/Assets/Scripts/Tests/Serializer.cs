@@ -69,6 +69,17 @@ public class Serializer
         playerJoined.Time = buffer.GetFloat();
         playerJoined.InstantiateCubesPending = true;
     }
+
+    public static void PlayerDisconnectSerialize(BitBuffer buffer, int userID)
+    {
+        buffer.PutByte((byte) PacketType.PLAYER_DISCONNECT);
+        buffer.PutInt(userID);
+    }
+
+    public static int PlayerDisconnectDeserialize(BitBuffer buffer)
+    {
+        return buffer.GetInt();
+    }
     
     public static void ServerWorldSerialize(Dictionary<int, ServerClientInfo> clients, BitBuffer buffer,
         int seq, float time, int cmdSeq)
@@ -98,9 +109,9 @@ public class Serializer
 
     public static PacketType ClientDeserialize(List<Snapshot> interpolationBuffer, PlayerJoined playerJoined, BitBuffer buffer,
         int displaySeq, CommandsList clientCommands, int cmdSeq, List<Shot> shots, int shotSeq,
-        ShotBroadcast shotBroadcast) {
+        ShotBroadcast shotBroadcast, out int playerDisconnect) {
         var messageType = buffer.GetByte();
-
+        playerDisconnect = -1;
         if (messageType == (byte)PacketType.UPDATE_MESSAGE)
         {
             ClientDeserializeUpdate(interpolationBuffer, buffer, displaySeq, clientCommands);
@@ -136,6 +147,10 @@ public class Serializer
             return PacketType.SHOT_BROADCAST;
         }
 
+        if (messageType == (byte) PacketType.PLAYER_DISCONNECT)
+        {
+            playerDisconnect = PlayerDisconnectDeserialize(buffer);
+        }
         return PacketType.PLAYER_DISCONNECT;
     }
 
@@ -248,9 +263,10 @@ public class Serializer
     }
 
     public static PacketType ServerDeserializeInput(BitBuffer buffer, List<Commands> commandsList,
-        List<Shot> shotsList, ShotBroadcast shotBroadcast, PlayerJoined p)
+        List<Shot> shotsList, ShotBroadcast shotBroadcast, PlayerJoined p, out int playerDisconnect)
     {
         var messageType = buffer.GetByte();
+        playerDisconnect = -1;
         if (messageType == (byte) PacketType.PLAYER_JOINED_ACK)
         {
             DeserializePlayerJoinedAck(p, buffer);
@@ -266,13 +282,15 @@ public class Serializer
             DeserializeShot(shotsList, buffer);
             return PacketType.PLAYER_SHOT;
         }
-
         if (messageType == (byte) PacketType.SHOT_BROADCAST_ACK)
         {
             DeserializeShotBroadcast(buffer, shotBroadcast); // SAME AS SHOTBROADCAST; BUT ITS AN ACK
             return PacketType.SHOT_BROADCAST_ACK;
         }
-
+        if (messageType == (byte) PacketType.PLAYER_DISCONNECT)
+        {
+            playerDisconnect = PlayerDisconnectDeserialize(buffer);
+        }
         return PacketType.PLAYER_DISCONNECT;
     }
 

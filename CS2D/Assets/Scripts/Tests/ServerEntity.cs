@@ -208,7 +208,8 @@ public class ServerEntity : MonoBehaviour
                 List<Shot> shotsList = new List<Shot>();
                 ShotBroadcast s = new ShotBroadcast();
                 PlayerJoined p = new PlayerJoined();
-                var packetType = Serializer.ServerDeserializeInput(buffer, commandsList, shotsList, s, p);
+                int playerDisconnect;
+                var packetType = Serializer.ServerDeserializeInput(buffer, commandsList, shotsList, s, p, out playerDisconnect);
                 // TODO: use generics to avoid code repetition,
                 // as shots and commands are handled the same way
                 switch (packetType)
@@ -224,6 +225,9 @@ public class ServerEntity : MonoBehaviour
                         break;
                     case PacketType.SHOT_BROADCAST_ACK:
                         AckBroadcastShot(userID, s);
+                        break;
+                    case PacketType.PLAYER_DISCONNECT:
+                        DisconnectPlayer(playerDisconnect);
                         break;
                     default:
                         throw new ArgumentOutOfRangeException();
@@ -367,6 +371,37 @@ public class ServerEntity : MonoBehaviour
         client.channel.Send(packet, remoteEp);
 
         packet.Free();
+    }
+
+    private void DisconnectPlayer(int userID)
+    {
+        if (!clients.ContainsKey(userID))
+            return;
+        
+        foreach (var kv in pendingPlayerJoined)
+        {
+            kv.Value.RemoveAll(x => x == userID);
+        }
+        Destroy(clients[userID].characterController.gameObject);
+        clients[userID].channel.Disconnect();
+        clients.Remove(userID);
+        BroadcastPlayerDisconnect(userID);
+    }
+
+    private void BroadcastPlayerDisconnect(int userID)
+    {
+        foreach (var clientPair in clients)
+        {
+            var client = clientPair.Value;
+            var packet = Packet.Obtain();
+            Serializer.PlayerDisconnectSerialize(packet.buffer, userID);
+            packet.buffer.Flush();
+        
+            var remoteEp = client.dest;
+            client.channel.Send(packet, remoteEp);
+
+            packet.Free();
+        }
     }
 
     public void OnDestroy()
