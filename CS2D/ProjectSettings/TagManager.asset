@@ -6,6 +6,7 @@ TagManager:
   tags:
   - Food
   - Gun
+  - MuzzleFlash
   layers:
   - Default
   - TransparentFX

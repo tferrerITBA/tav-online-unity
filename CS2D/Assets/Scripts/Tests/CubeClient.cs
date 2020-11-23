@@ -47,6 +47,11 @@ public class CubeClient : MonoBehaviour
 
     private Commands currentCommands;
 
+    private void Start()
+    {
+        muzzleFlash = GameObject.FindWithTag("MuzzleFlash").GetComponent<ParticleSystem>();
+    }
+
     public void Initialize(string srvIP, int srvPort, int userID, int cubesLayer, Channel channel)
     {
         this.serverEndpoint = new IPEndPoint(IPAddress.Parse(srvIP), srvPort);
