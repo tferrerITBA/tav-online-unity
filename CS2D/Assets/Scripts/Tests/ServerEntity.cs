@@ -65,8 +65,7 @@ public class ServerEntity : MonoBehaviour
         sendRate = 1f / pps;
         GameObject.FindGameObjectWithTag("Gun").SetActive(false);
     }
-
-    // Update is called once per frame
+    
     void Update() {
         if (Input.GetKeyDown(KeyCode.J))
         {
