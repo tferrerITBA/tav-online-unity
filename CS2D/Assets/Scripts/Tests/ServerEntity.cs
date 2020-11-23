@@ -36,7 +36,7 @@ public class ServerEntity : MonoBehaviour
     public CubeClient clientPrefab;
 
     private float playerSpeed = 5;
-    private const int DamagePerShot = 10;
+    public static int DamagePerShot = 10;
     private int shotCount;
 
     public float ShotAckTimeout = 1f;

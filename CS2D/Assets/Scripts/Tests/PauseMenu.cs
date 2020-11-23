@@ -5,6 +5,7 @@ using UnityEngine;
 public class PauseMenu : MonoBehaviour
 {
     public GameObject pauseMenu;
+    public GameObject healthHUD;
     public MouseLook cam;
 
     // Update is called once per frame
@@ -12,6 +13,7 @@ public class PauseMenu : MonoBehaviour
     {
         if (Input.GetKeyDown(KeyCode.Escape))
         {
+            healthHUD.SetActive(pauseMenu.activeSelf);
             pauseMenu.SetActive(!pauseMenu.activeSelf);
             cam.ToggleMouseLock();
         }
@@ -19,6 +21,7 @@ public class PauseMenu : MonoBehaviour
 
     public void ResumeGame()
     {
+        healthHUD.SetActive(true);
         pauseMenu.SetActive(false);
         cam.SetMouseLock(CursorLockMode.Locked);
     }

@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.Net;
 using Tests;
+using TMPro;
 using UnityEngine;
 using Random = UnityEngine.Random;
 
@@ -31,11 +32,13 @@ public class CubeClient : MonoBehaviour
 
     public CharacterController ownCube;
     public int health = 100;
+    public TMP_Text healthText;
     public float shotInterval = 0.3f;
     public float shotCooldown = 0.1f;
     public LayerMask shotsLayer;
     public float shotMaxDistance;
     private RaycastHit shotRaycastHit;
+    public ParticleSystem muzzleFlash;
 
     public Color clientColor;
     public float playerSpeed = 5;
@@ -89,6 +92,11 @@ public class CubeClient : MonoBehaviour
                 }
                 else
                 {
+                    if (shotBroadcast.PlayerShotID == userID)
+                    {
+                        health -= ServerEntity.DamagePerShot;
+                        healthText.text = health.ToString();
+                    }
                     // An animation or an effect could be shown
                 }
 
@@ -204,6 +212,7 @@ public class CubeClient : MonoBehaviour
 
         if (/*Input.GetButton("Fire1")*/ Input.GetKeyDown(KeyCode.L) && shotCooldown >= shotInterval)
         {
+            muzzleFlash.Play();
             var tf = ownCube.transform;
             var hit = Physics.Raycast(
                 tf.position,

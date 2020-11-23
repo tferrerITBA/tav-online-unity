@@ -54,12 +54,16 @@ MonoBehaviour:
   ownPlayerLayer: 29
   ownCube: {fileID: 0}
   health: 100
+  healthText: {fileID: 4932615552492176806, guid: b568c09c6df604b19a300d48f9915bb3,
+    type: 3}
   shotInterval: 1
   shotCooldown: 0.1
   shotsLayer:
     serializedVersion: 2
     m_Bits: 0
   shotMaxDistance: 0
+  muzzleFlash: {fileID: 1803452179454160455, guid: 8c2244d59d9a84eb1b7a4f1434338c7a,
+    type: 3}
   clientColor: {r: 0, g: 0, b: 0, a: 0}
   playerSpeed: 5
   interpolationCount: 2
