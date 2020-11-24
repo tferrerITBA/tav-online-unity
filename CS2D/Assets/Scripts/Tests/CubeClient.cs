@@ -299,7 +299,7 @@ public class CubeClient : MonoBehaviour
             return;
         
         ownCube.transform.position = userState.Position;
-        var rotation = transform.rotation.eulerAngles.y;
+        var rotation = ownCube.transform.rotation.eulerAngles.y;
 
         int jaja = 0;
         foreach (var cmd in commands.GetSnapshotUnackedCommands())
@@ -316,18 +316,18 @@ public class CubeClient : MonoBehaviour
             if (!ownCube.isGrounded)
                 ownCube.SimpleMove(Vector3.zero);
             
-            transform.rotation = Quaternion.Euler(0, cmd.Rotation, 0);
             Vector3 move = new Vector3(
                 cmd.GetXDirection() * Time.fixedDeltaTime, 
                 0,
                 cmd.GetZDirection() * Time.fixedDeltaTime
             );
 
+            ownCube.transform.rotation = Quaternion.Euler(0, cmd.Rotation, 0);
             move = ownCube.transform.TransformDirection(move) * playerSpeed;
             ownCube.Move(move);
         }
 
-        transform.rotation = Quaternion.Euler(0, rotation, 0);
+        ownCube.transform.rotation = Quaternion.Euler(0, rotation, 0);
         // commands.SnapshotAck(commandSnapshotAck);
     }
 
