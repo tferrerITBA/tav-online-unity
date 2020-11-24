@@ -71,7 +71,7 @@ public class ClientManager : MonoBehaviour
             packet.Free();
         }
 
-        var resp = channel.GetPacket();
+        var resp = channel?.GetPacket();
         if (resp != null)
         {
             var responseData = Serializer.PlayerConnectResponseDeserialize(resp.buffer);
@@ -81,7 +81,8 @@ public class ClientManager : MonoBehaviour
             
             clientCount++;
             clientPort += 2;
-            channel = new Channel(clientPort);
+            channel = null;
+            // channel = new Channel(clientPort); // for new player connections
         }
     }
     

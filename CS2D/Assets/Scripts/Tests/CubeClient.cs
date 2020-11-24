@@ -334,7 +334,7 @@ public class CubeClient : MonoBehaviour
                 // Renderer rndr = player.GetComponent<Renderer>();
                 // rndr.material.color = clientColor;
                 cubes.Add(userStatePair.Key, player);
-                if (playerJoined.PlayerCount == 1) // TODO: replace w/ userID == userStatePair.Key  
+                if (userID == userStatePair.Key)
                 {
                     SetLayer(player, ownPlayerLayer);
                     var cam = GameObject.FindGameObjectWithTag("MainCamera").transform;
