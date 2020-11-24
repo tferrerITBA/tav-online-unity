@@ -76,9 +76,10 @@ public class CubeClient : MonoBehaviour
         while (packet != null)
         {
             var buffer = packet.buffer;
-            int playerDisconnect;
+            int playerDisconnect, commandSnapshotAck;
             var pt = Serializer.ClientDeserialize(interpolationBuffer, playersToInstantiate, buffer,
-                displaySeq, commands, currentCommands.Seq, shots, shotSeq, shotBroadcast, out playerDisconnect);
+                displaySeq, commands, currentCommands.Seq, shots, shotSeq, shotBroadcast,
+                out commandSnapshotAck, out playerDisconnect);
             if (pt == PacketType.PLAYER_JOINED)
             {
                 AckPlayerJoined();
@@ -91,7 +92,7 @@ public class CubeClient : MonoBehaviour
             }
             else if (pt == PacketType.UPDATE_MESSAGE && ownCube) // a Snapshot was just received
             {
-                CorrectPosition(interpolationBuffer[interpolationBuffer.Count - 1].UserStates[userID]);
+                CorrectPosition(interpolationBuffer[interpolationBuffer.Count - 1].UserStates[userID], commandSnapshotAck);
             }
             else if (pt == PacketType.SHOT_BROADCAST)
             {
@@ -292,25 +293,42 @@ public class CubeClient : MonoBehaviour
         ownCube.Move(move);
     }
     
-    private void CorrectPosition(UserState userState)
+    private void CorrectPosition(UserState userState, int commandSnapshotAck)
     {
         if (!ownCube || !ownCube.gameObject.activeSelf) // player not respawned yet
             return;
         
         ownCube.transform.position = userState.Position;
+        var rotation = transform.rotation.eulerAngles.y;
+
+        int jaja = 0;
         foreach (var cmd in commands.GetSnapshotUnackedCommands())
         {
+            /*if (cmd.Seq > commandSnapshotAck)
+            {
+                if (jaja > 0)
+                    Debug.Log(jaja);
+                break;
+            }
+
+            jaja++;*/
+            
             if (!ownCube.isGrounded)
                 ownCube.SimpleMove(Vector3.zero);
             
+            transform.rotation = Quaternion.Euler(0, cmd.Rotation, 0);
             Vector3 move = new Vector3(
                 cmd.GetXDirection() * Time.fixedDeltaTime, 
                 0,
                 cmd.GetZDirection() * Time.fixedDeltaTime
             );
 
+            move = ownCube.transform.TransformDirection(move) * playerSpeed;
             ownCube.Move(move);
         }
+
+        transform.rotation = Quaternion.Euler(0, rotation, 0);
+        // commands.SnapshotAck(commandSnapshotAck);
     }
 
     private void InstantiateCubes(PlayerJoined playerJoined)
@@ -339,7 +357,7 @@ public class CubeClient : MonoBehaviour
                     SetLayer(player, ownPlayerLayer);
                     var cam = GameObject.FindGameObjectWithTag("MainCamera").transform;
                     cam.SetParent(ownCube.transform);
-                    cam.localPosition = new Vector3(0, 1, 0);
+                    cam.localPosition = new Vector3(0, 2, 0);
                     cam.localRotation = Quaternion.identity;
                     cam.GetComponent<MouseLook>().player = ownCube.transform;
                 }

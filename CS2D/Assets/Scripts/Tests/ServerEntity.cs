@@ -66,6 +66,8 @@ public class ServerEntity : MonoBehaviour
         sendRate = 1f / pps;
         GameObject.FindGameObjectWithTag("Gun").SetActive(false);
         GameObject.FindGameObjectWithTag("PlayerUI").SetActive(false);
+        QualitySettings.vSyncCount = 0;
+        Application.targetFrameRate = 60;
     }
     
     void Update() {

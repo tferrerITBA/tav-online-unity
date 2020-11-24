@@ -109,12 +109,14 @@ public class Serializer
 
     public static PacketType ClientDeserialize(List<Snapshot> interpolationBuffer, PlayerJoined playerJoined, BitBuffer buffer,
         int displaySeq, CommandsList clientCommands, int cmdSeq, List<Shot> shots, int shotSeq,
-        ShotBroadcast shotBroadcast, out int playerDisconnect) {
+        ShotBroadcast shotBroadcast, out int commandSnapshotAck, out int playerDisconnect)
+    {
+        commandSnapshotAck = -1;
         var messageType = buffer.GetByte();
         playerDisconnect = -1;
         if (messageType == (byte)PacketType.UPDATE_MESSAGE)
         {
-            ClientDeserializeUpdate(interpolationBuffer, buffer, displaySeq, clientCommands);
+            ClientDeserializeUpdate(interpolationBuffer, buffer, displaySeq, clientCommands, out commandSnapshotAck);
             return PacketType.UPDATE_MESSAGE;
         }
         if (messageType == (byte)PacketType.PLAYER_JOINED)
@@ -155,8 +157,9 @@ public class Serializer
     }
 
     private static void ClientDeserializeUpdate(List<Snapshot> interpolationBuffer, BitBuffer buffer,
-        int displaySeq, CommandsList clientCommands)
+        int displaySeq, CommandsList clientCommands, out int commandSnapshotAck)
     {
+        commandSnapshotAck = -1;
         var seq = buffer.GetInt();
         var time = buffer.GetFloat();
         var cmdSeq = buffer.GetInt();
@@ -184,6 +187,7 @@ public class Serializer
         if (seq < displaySeq) return;
         
         clientCommands.SnapshotAck(cmdSeq);
+        commandSnapshotAck = cmdSeq;
 
         Snapshot snapshot = new Snapshot(seq, time, cmdSeq, userStates);
         for (i = 0; i < interpolationBuffer.Count; i++)

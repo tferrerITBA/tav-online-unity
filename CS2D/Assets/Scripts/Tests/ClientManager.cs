@@ -38,6 +38,8 @@ public class ClientManager : MonoBehaviour
             SceneManager.LoadScene(0); 
         }
         serverRemote = new IPEndPoint(IPAddress.Parse(serverIP), ServerEntity.PlayerJoinPort);
+        QualitySettings.vSyncCount = 0;
+        Application.targetFrameRate = 60;
     }
 
     // Update is called once per frame
