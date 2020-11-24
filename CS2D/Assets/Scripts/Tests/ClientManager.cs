@@ -28,19 +28,16 @@ public class ClientManager : MonoBehaviour
             Destroy(gameObject);
             return;
         }
-        try
+        serverIP = PlayerPrefs.GetString("serverIP", "127.0.0.1");
+        clientPort = PlayerPrefs.GetInt("clientPort", 9001);
+        channel = new Channel(clientPort);
+        if (channel == null)
         {
-            serverIP = PlayerPrefs.GetString("serverIP", "127.0.0.1");
-            clientPort = PlayerPrefs.GetInt("clientPort", 9001);
-            channel = new Channel(clientPort);
-            serverRemote = new IPEndPoint(IPAddress.Parse(serverIP), ServerEntity.PlayerJoinPort);
-        }
-        catch (Exception e)
-        {
-            PlayerPrefs.SetString("connectionError", e.Message);
+            PlayerPrefs.SetString("connectionError", $"Could not connect socket at port {clientPort}");
             PlayerPrefs.Save();
-            SceneManager.LoadScene(0); // back to main menu
+            SceneManager.LoadScene(0); 
         }
+        serverRemote = new IPEndPoint(IPAddress.Parse(serverIP), ServerEntity.PlayerJoinPort);
     }
 
     // Update is called once per frame

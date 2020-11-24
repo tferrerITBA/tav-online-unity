@@ -16,7 +16,8 @@ public class PauseMenu : MonoBehaviour
         {
             healthHUD.SetActive(pauseMenu.activeSelf);
             pauseMenu.SetActive(!pauseMenu.activeSelf);
-            cam.ToggleMouseLock();
+            if (!(PlayerPrefs.GetInt("isServer") > 0))
+                cam.ToggleMouseLock();
         }
     }
 

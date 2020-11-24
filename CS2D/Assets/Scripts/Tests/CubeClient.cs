@@ -34,8 +34,8 @@ public class CubeClient : MonoBehaviour
 
     public CharacterController ownCube;
     public int health = 100;
-    public TMP_Text healthText;
-    public float shotInterval = 0.3f;
+    private TMP_Text healthText;
+    public float shotInterval = 0.1f;
     public float shotCooldown = 0.1f;
     public LayerMask shotsLayer;
     public float shotMaxDistance;
@@ -53,6 +53,7 @@ public class CubeClient : MonoBehaviour
     private void Start()
     {
         muzzleFlash = GameObject.FindWithTag("MuzzleFlash").GetComponent<ParticleSystem>();
+        healthText = GameObject.FindGameObjectWithTag("PlayerUI").GetComponent<TMP_Text>();
     }
 
     public void Initialize(string srvIP, int srvPort, int userID, int cubesLayer, Channel channel)

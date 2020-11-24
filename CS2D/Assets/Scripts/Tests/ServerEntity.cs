@@ -45,6 +45,7 @@ public class ServerEntity : MonoBehaviour
     public float playerJoinedAckTime;
     
     private Dictionary<int, List<int>> pendingPlayerJoined = new Dictionary<int, List<int>>();
+    private List<int> playersToDisconnect = new List<int>();
     
     void Awake() {
         if (!(PlayerPrefs.GetInt("isServer") > 0))
@@ -64,6 +65,7 @@ public class ServerEntity : MonoBehaviour
         }
         sendRate = 1f / pps;
         GameObject.FindGameObjectWithTag("Gun").SetActive(false);
+        GameObject.FindGameObjectWithTag("PlayerUI").SetActive(false);
     }
     
     void Update() {
@@ -226,7 +228,7 @@ public class ServerEntity : MonoBehaviour
                         AckBroadcastShot(userID, s);
                         break;
                     case PacketType.PLAYER_DISCONNECT:
-                        DisconnectPlayer(playerDisconnect);
+                        playersToDisconnect.Add(playerDisconnect);
                         break;
                     default:
                         throw new ArgumentOutOfRangeException();
@@ -235,6 +237,13 @@ public class ServerEntity : MonoBehaviour
                 packet = cubeClient.channel.GetPacket();
             }
         }
+
+        foreach (var userID in playersToDisconnect)
+        {
+            DisconnectPlayer(userID);
+        }
+        playersToDisconnect.Clear();
+        
         if (accum >= sendRate)
         {
             foreach (var cubeClientPair in clients)

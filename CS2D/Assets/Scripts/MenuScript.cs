@@ -31,7 +31,7 @@ public class MenuScript : MonoBehaviour
     {
         PlayerPrefs.SetInt("isServer", 0);
         PlayerPrefs.SetString("serverIP", serverIPInput.text);
-        PlayerPrefs.SetString("clientPort", clientPortInput.text);
+        PlayerPrefs.SetInt("clientPort", Int32.Parse(clientPortInput.text));
         PlayerPrefs.Save();
         SceneManager.LoadScene(SceneManager.GetActiveScene().buildIndex + 1);
     }
