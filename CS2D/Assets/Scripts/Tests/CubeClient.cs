@@ -2,9 +2,11 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Net;
+using System.Threading.Tasks;
 using Tests;
 using TMPro;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using Random = UnityEngine.Random;
 
 public class CubeClient : MonoBehaviour
@@ -46,6 +48,7 @@ public class CubeClient : MonoBehaviour
     public int interpolationCount = 2;
 
     private Commands currentCommands;
+    private int networkLatency;
 
     private void Start()
     {
@@ -167,8 +170,18 @@ public class CubeClient : MonoBehaviour
         packet.buffer.Flush();
         
         var remoteEp = serverEndpoint;
-        channel.Send(packet, remoteEp);
-        packet.Free();
+        if (networkLatency == 0)
+        {
+            channel.Send(packet, remoteEp);
+            packet.Free();
+        }
+        else
+        {
+            Task.Delay(networkLatency)
+                .ContinueWith(t => channel.Send(packet, remoteEp))
+                .ContinueWith(t => packet.Free());
+        }
+        
 
         currentCommands.Seq++;
         // }
@@ -215,6 +228,8 @@ public class CubeClient : MonoBehaviour
             currentCommands.Space = false;
         }
 
+        SetLatency();
+
         if (/*Input.GetButton("Fire1")*/ Input.GetKeyDown(KeyCode.L) && shotCooldown >= shotInterval)
         {
             muzzleFlash.Play();
@@ -235,8 +250,17 @@ public class CubeClient : MonoBehaviour
                 packet.buffer.Flush();
                 
                 var remoteEp = serverEndpoint;
-                channel.Send(packet, remoteEp);
-                packet.Free();
+                if (networkLatency == 0)
+                {
+                    channel.Send(packet, remoteEp);
+                    packet.Free();
+                }
+                else
+                {
+                    Task.Delay(networkLatency)
+                        .ContinueWith(t => channel.Send(packet, remoteEp))
+                        .ContinueWith(t => packet.Free());
+                }
 
                 shotSeq++;
             }
@@ -410,6 +434,30 @@ public class CubeClient : MonoBehaviour
             var childGO = child.gameObject;
             childGO.layer = layer;
             SetLayer(childGO, layer);
+        }
+    }
+
+    private void SetLatency()
+    {
+        if (Input.GetKeyDown(KeyCode.Alpha1))
+        {
+            networkLatency = 0;
+        }
+        else if (Input.GetKeyDown(KeyCode.Alpha2))
+        {
+            networkLatency = 100;
+        }
+        else if (Input.GetKeyDown(KeyCode.Alpha3))
+        {
+            networkLatency = 200;
+        }
+        else if (Input.GetKeyDown(KeyCode.Alpha4))
+        {
+            networkLatency = 300;
+        }
+        else if (Input.GetKeyDown(KeyCode.Alpha5))
+        {
+            networkLatency = 400;
         }
     }
 }

@@ -17,6 +17,8 @@ public class ClientManager : MonoBehaviour
     private int startingLayer = 9;
     private int clientCount;
 
+    private bool sentConnection;
+
     // public Dictionary<int, CubeClient> CubeClients => cubeClients;
 
     void Start()
@@ -58,8 +60,9 @@ public class ClientManager : MonoBehaviour
         }
         if (tralala.seq - jaja > 30 && jaja > 0)
             Debug.Log("PROBLEMA");*/
-        if (Input.GetKeyDown(KeyCode.C))
+        if (!sentConnection)
         {
+            sentConnection = true;
             int userID = Random.Range(0, 8096);
             var packet = Packet.Obtain();
             Serializer.PlayerConnectSerialize(packet.buffer, userID);
