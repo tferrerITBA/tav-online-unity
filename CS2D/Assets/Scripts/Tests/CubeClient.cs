@@ -138,7 +138,7 @@ public class CubeClient : MonoBehaviour
 
             var previousTime = interpolationBuffer[0].Time;
             var nextTime = interpolationBuffer[1].Time;
-            if (time >= nextTime) {
+            while (time >= nextTime) {
                 interpolationBuffer.RemoveAt(0);
                 displaySeq++;
                 if (interpolationBuffer.Count < 2)
