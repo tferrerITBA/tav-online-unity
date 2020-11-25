@@ -87,6 +87,7 @@ public class CubeClient : MonoBehaviour
             else if (pt == PacketType.PLAYER_DISCONNECT)
             {
                 Destroy(cubes[playerDisconnect].gameObject);
+                cubes.Remove(playerDisconnect);
                 if (playerDisconnect == userID)
                     Destroy(this);
             }
@@ -183,7 +184,6 @@ public class CubeClient : MonoBehaviour
                 .ContinueWith(t => channel.Send(packet, remoteEp))
                 .ContinueWith(t => packet.Free());
         }
-        
 
         currentCommands.Seq++;
         // }
@@ -234,6 +234,7 @@ public class CubeClient : MonoBehaviour
 
         if (/*Input.GetButton("Fire1")*/ Input.GetKeyDown(KeyCode.L) && shotCooldown >= shotInterval)
         {
+            shotCooldown += Time.deltaTime;
             muzzleFlash.Play();
             var tf = ownCube.transform;
             var hit = Physics.Raycast(
@@ -245,6 +246,7 @@ public class CubeClient : MonoBehaviour
                 Debug.DrawLine(ownCube.transform.position, shotRaycastHit.point, Color.red, 200);
                 // Debug.Log($"ORIGIN: {tf.position}; DIRECTION: {tf.forward}; HIT: {shotRaycastHit.point}");
                 int otherPlayerId = Int32.Parse(shotRaycastHit.transform.name);
+                Debug.Log($"Shooting player {otherPlayerId}, shot number {shotSeq}");
                 shots.Add(new Shot(shotSeq, userID, otherPlayerId));
                 
                 var packet = Packet.Obtain();
@@ -266,12 +268,9 @@ public class CubeClient : MonoBehaviour
 
                 shotSeq++;
             }
-            
             shotCooldown = 0;
         }
 
-        if (shotCooldown < shotInterval)
-            shotCooldown += Time.deltaTime;
     }
 
     private void MoveOwnCube(Commands commandsToApply)
@@ -477,6 +476,10 @@ public class CubeClient : MonoBehaviour
         else if (Input.GetKeyDown(KeyCode.Alpha5))
         {
             networkLatency = 400;
+        }
+        else if (Input.GetKeyDown(KeyCode.Alpha6))
+        {
+            networkLatency = 500;
         }
     }
 }

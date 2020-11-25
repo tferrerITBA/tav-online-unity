@@ -58,4 +58,9 @@ public class MenuScript : MonoBehaviour
         audioMixer.GetFloat("Volume", out var volume);
         audioMixer.SetFloat("Volume", volume == 0 ? -80 : 0);
     }
+
+    public void SetHDResolution()
+    {
+        Screen.SetResolution(1280, 720, false);
+    }
 }
