@@ -43,15 +43,27 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: b4278f1119c814d268f3114756baa4c1, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  sendPort: 0
-  recvPort: 0
   userID: 0
   displaySeq: 0
   time: 0
   isPlaying: 0
-  cubePrefab: {fileID: 2337597147086023070, guid: 00fd97e681ec14f479c9e7b7790e0849,
+  cubePrefab: {fileID: 5505638626294744671, guid: 907f2d2d904d24dc49abefdfc2e7d188,
     type: 3}
-  playerCubePrefab: {fileID: 2337597147086023070, guid: 28cc0406fbd014feabdbff6672bc5930,
+  playerCubePrefab: {fileID: 5505638626294744671, guid: 907f2d2d904d24dc49abefdfc2e7d188,
+    type: 3}
+  ownPlayerLayer: 29
+  ownCube: {fileID: 0}
+  health: 100
+  healthText: {fileID: 4932615552492176806, guid: b568c09c6df604b19a300d48f9915bb3,
+    type: 3}
+  shotInterval: 1
+  shotCooldown: 0.1
+  shotsLayer:
+    serializedVersion: 2
+    m_Bits: 0
+  shotMaxDistance: 0
+  muzzleFlash: {fileID: 1803452179454160455, guid: 8c2244d59d9a84eb1b7a4f1434338c7a,
     type: 3}
   clientColor: {r: 0, g: 0, b: 0, a: 0}
+  playerSpeed: 5
   interpolationCount: 2

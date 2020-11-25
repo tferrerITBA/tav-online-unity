@@ -21,6 +21,25 @@ public class PlayerJoined
         this.seq = seq;
         this.time = time;
     }
+    
+    public override bool Equals(object obj)
+    {
+        PlayerJoined other = obj as PlayerJoined;
+
+        if (other == null)
+        {
+            return false;
+        }
+
+        return userID == other.userID;
+    }
+
+    public override int GetHashCode()
+    {
+        int hash = 13;
+        hash = (hash * 7) + userID.GetHashCode();
+        return hash;
+    }
 
     public int UserID
     {

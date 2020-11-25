@@ -2,65 +2,118 @@
 using System.Collections;
 using System.Collections.Generic;
 using System.Net;
+using System.Threading.Tasks;
 using Tests;
+using TMPro;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using Random = UnityEngine.Random;
 
 public class CubeClient : MonoBehaviour
 {
-    public int sendPort;
-    public int recvPort;
-    public Channel sendChannel;
-    public Channel recvChannel;
+    public IPEndPoint serverEndpoint;
+    public Channel channel;
 
     public int userID;
     public int displaySeq;
     public float time;
     public bool isPlaying;
     private PlayerJoined playersToInstantiate = new PlayerJoined();
+    private ShotBroadcast shotBroadcast = new ShotBroadcast();
 
     private readonly List<Snapshot> interpolationBuffer = new List<Snapshot>();
     private readonly CommandsList commands = new CommandsList();
     private readonly Dictionary<int, GameObject> cubes = new Dictionary<int, GameObject>();
+    private readonly List<Shot> shots = new List<Shot>();
+    private int shotSeq = 1;
 
     public GameObject cubePrefab;
     public GameObject playerCubePrefab;
+    private int cubesLayer;
+    public int ownPlayerLayer;
 
     public CharacterController ownCube;
-    public float gravity = -9.81f;
+    public int health = 100;
+    private TMP_Text healthText;
+    public float shotInterval = 0.1f;
+    public float shotCooldown = 0.1f;
+    public LayerMask shotsLayer;
+    public float shotMaxDistance;
+    private RaycastHit shotRaycastHit;
+    public ParticleSystem muzzleFlash;
 
     public Color clientColor;
-    public float speed = 5;
+    public float playerSpeed = 5;
     
     public int interpolationCount = 2;
 
     private Commands currentCommands;
+    private int networkLatency;
 
-    public void Initialize(int sendPort, int recvPort, int userID, int cubesLayer)
+    private void Start()
     {
-        this.sendPort = sendPort;
-        this.sendChannel = new Channel(sendPort);
-        this.recvPort = recvPort;
-        this.recvChannel = new Channel(recvPort);
+        muzzleFlash = GameObject.FindWithTag("MuzzleFlash").GetComponent<ParticleSystem>();
+        healthText = GameObject.FindGameObjectWithTag("PlayerUI").GetComponent<TMP_Text>();
+    }
+
+    public void Initialize(string srvIP, int srvPort, int userID, int cubesLayer, Channel channel)
+    {
+        this.serverEndpoint = new IPEndPoint(IPAddress.Parse(srvIP), srvPort);
+        this.channel = channel;
         this.userID = userID;
-        gameObject.layer = cubesLayer;
+        this.cubesLayer = cubesLayer;
+        SetLayer(gameObject, cubesLayer);
+        shotsLayer = LayerMask.GetMask(LayerMask.LayerToName(cubesLayer));
+        shotMaxDistance = 1000000f;
         clientColor = new Color(Random.value, Random.value, Random.value);
         currentCommands = new Commands(userID);
     }
 
     private void Update()
     {
-        var packet = recvChannel.GetPacket();
+        var packet = channel.GetPacket();
 
-        if (packet != null)
+        while (packet != null)
         {
             var buffer = packet.buffer;
+            int playerDisconnect, commandSnapshotAck;
             var pt = Serializer.ClientDeserialize(interpolationBuffer, playersToInstantiate, buffer,
-                displaySeq, commands, currentCommands.Seq);
-            if (pt == PacketType.UPDATE_MESSAGE && ownCube) // a Snapshot was just received
+                displaySeq, commands, currentCommands.Seq, shots, shotSeq, shotBroadcast,
+                out commandSnapshotAck, out playerDisconnect);
+            if (pt == PacketType.PLAYER_JOINED)
             {
-                CorrectPosition(interpolationBuffer[interpolationBuffer.Count - 1].UserStates[userID]);
+                AckPlayerJoined();
             }
+            else if (pt == PacketType.PLAYER_DISCONNECT)
+            {
+                Destroy(cubes[playerDisconnect].gameObject);
+                if (playerDisconnect == userID)
+                    Destroy(this);
+            }
+            else if (pt == PacketType.UPDATE_MESSAGE && ownCube) // a Snapshot was just received
+            {
+                CorrectPosition(interpolationBuffer[interpolationBuffer.Count - 1].UserStates[userID], commandSnapshotAck);
+            }
+            else if (pt == PacketType.SHOT_BROADCAST)
+            {
+                if (shotBroadcast.PlayerDied)
+                {
+                    cubes[shotBroadcast.PlayerShotID].SetActive(false);
+                }
+                else
+                {
+                    if (shotBroadcast.PlayerShotID == userID)
+                    {
+                        health -= ServerEntity.DamagePerShot;
+                        healthText.text = health.ToString();
+                    }
+                    // An animation or an effect could be shown
+                }
+
+                AckShotBroadcast();
+            }
+            
+            packet = channel.GetPacket();
         }
 
         ReadClientInput();
@@ -87,7 +140,7 @@ public class CubeClient : MonoBehaviour
 
             var previousTime = interpolationBuffer[0].Time;
             var nextTime = interpolationBuffer[1].Time;
-            if (time >= nextTime) {
+            while (time >= nextTime) {
                 interpolationBuffer.RemoveAt(0);
                 displaySeq++;
                 if (interpolationBuffer.Count < 2)
@@ -105,26 +158,42 @@ public class CubeClient : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if (currentCommands.HasCommand())
+        if (!ownCube)
+            return;
+        // if (currentCommands.HasCommand())
+        // {
+
+        currentCommands.Rotation = ownCube.transform.rotation.eulerAngles.y;
+        commands.Add(new Commands(currentCommands));
+        MoveOwnCube(currentCommands);
+        //serialize
+        var packet = Packet.Obtain();
+        Serializer.ClientSerializeInput(commands, packet.buffer);
+        packet.buffer.Flush();
+        
+        var remoteEp = serverEndpoint;
+        if (networkLatency == 0)
         {
-            commands.Add(new Commands(currentCommands));
-            MoveOwnCube(currentCommands);
-            //serialize
-            var packet = Packet.Obtain();
-            Serializer.ClientSerializeInput(commands, packet.buffer);
-            packet.buffer.Flush();
-
-            string serverIP = "127.0.0.1";
-            var remoteEp = new IPEndPoint(IPAddress.Parse(serverIP), sendPort);
-            sendChannel.Send(packet, remoteEp);
+            channel.Send(packet, remoteEp);
             packet.Free();
-
-            currentCommands.Seq++;
         }
+        else
+        {
+            Task.Delay(networkLatency)
+                .ContinueWith(t => channel.Send(packet, remoteEp))
+                .ContinueWith(t => packet.Free());
+        }
+        
+
+        currentCommands.Seq++;
+        // }
     }
 
     private void ReadClientInput()
     {
+        if (!ownCube || !ownCube.gameObject.activeSelf) // player not respawned yet
+            return;
+        
         if (Input.GetKeyDown(KeyCode.UpArrow))
         {
             currentCommands.Up = true;
@@ -160,10 +229,56 @@ public class CubeClient : MonoBehaviour
         {
             currentCommands.Space = false;
         }
+
+        SetLatency();
+
+        if (/*Input.GetButton("Fire1")*/ Input.GetKeyDown(KeyCode.L) && shotCooldown >= shotInterval)
+        {
+            muzzleFlash.Play();
+            var tf = ownCube.transform;
+            var hit = Physics.Raycast(
+                tf.position,
+                tf.forward, out shotRaycastHit, shotMaxDistance,
+                shotsLayer);
+            if (hit)
+            {
+                Debug.DrawLine(ownCube.transform.position, shotRaycastHit.point, Color.red, 200);
+                // Debug.Log($"ORIGIN: {tf.position}; DIRECTION: {tf.forward}; HIT: {shotRaycastHit.point}");
+                int otherPlayerId = Int32.Parse(shotRaycastHit.transform.name);
+                shots.Add(new Shot(shotSeq, userID, otherPlayerId));
+                
+                var packet = Packet.Obtain();
+                Serializer.ClientSerializeShot(shots, packet.buffer);
+                packet.buffer.Flush();
+                
+                var remoteEp = serverEndpoint;
+                if (networkLatency == 0)
+                {
+                    channel.Send(packet, remoteEp);
+                    packet.Free();
+                }
+                else
+                {
+                    Task.Delay(networkLatency)
+                        .ContinueWith(t => channel.Send(packet, remoteEp))
+                        .ContinueWith(t => packet.Free());
+                }
+
+                shotSeq++;
+            }
+            
+            shotCooldown = 0;
+        }
+
+        if (shotCooldown < shotInterval)
+            shotCooldown += Time.deltaTime;
     }
 
     private void MoveOwnCube(Commands commandsToApply)
     {
+        if (!ownCube.gameObject.activeSelf) // player not respawned yet
+            return;
+        
         if (!ownCube.isGrounded)
         {
             // Vector3 vel = new Vector3(0, gravity * Time.deltaTime, 0);
@@ -174,14 +289,30 @@ public class CubeClient : MonoBehaviour
         move.x += commandsToApply.GetXDirection() * Time.fixedDeltaTime;
         move.z += commandsToApply.GetZDirection() * Time.fixedDeltaTime;
 
+        move = ownCube.transform.TransformDirection(move) * playerSpeed;
         ownCube.Move(move);
     }
     
-    private void CorrectPosition(UserState userState)
+    private void CorrectPosition(UserState userState, int commandSnapshotAck)
     {
+        if (!ownCube || !ownCube.gameObject.activeSelf) // player not respawned yet
+            return;
+        
         ownCube.transform.position = userState.Position;
+        var rotation = ownCube.transform.rotation.eulerAngles.y;
+
+        int jaja = 0;
         foreach (var cmd in commands.GetSnapshotUnackedCommands())
         {
+            /*if (cmd.Seq > commandSnapshotAck)
+            {
+                if (jaja > 0)
+                    Debug.Log(jaja);
+                break;
+            }
+
+            jaja++;*/
+            
             if (!ownCube.isGrounded)
                 ownCube.SimpleMove(Vector3.zero);
             
@@ -191,8 +322,13 @@ public class CubeClient : MonoBehaviour
                 cmd.GetZDirection() * Time.fixedDeltaTime
             );
 
+            ownCube.transform.rotation = Quaternion.Euler(0, cmd.Rotation, 0);
+            move = ownCube.transform.TransformDirection(move) * playerSpeed;
             ownCube.Move(move);
         }
+
+        ownCube.transform.rotation = Quaternion.Euler(0, rotation, 0);
+        // commands.SnapshotAck(commandSnapshotAck);
     }
 
     private void InstantiateCubes(PlayerJoined playerJoined)
@@ -211,18 +347,33 @@ public class CubeClient : MonoBehaviour
                 {
                     player = Instantiate(cubePrefab, transform);
                 }
-                player.layer = gameObject.layer;
-                Renderer rndr = player.GetComponent<Renderer>();
-                rndr.material.color = clientColor;
+
+                player.name = userStatePair.Key.ToString();
+                // Renderer rndr = player.GetComponent<Renderer>();
+                // rndr.material.color = clientColor;
                 cubes.Add(userStatePair.Key, player);
+                if (userID == userStatePair.Key)
+                {
+                    SetLayer(player, ownPlayerLayer);
+                    var cam = GameObject.FindGameObjectWithTag("MainCamera").transform;
+                    cam.SetParent(ownCube.transform);
+                    cam.localPosition = new Vector3(0, 2, 0);
+                    cam.localRotation = Quaternion.identity;
+                    cam.GetComponent<MouseLook>().player = ownCube.transform;
+                }
+                else
+                {
+                    SetLayer(player, cubesLayer);
+                }
             }
         }
         else // just instantiate the new player
         {
             var newPlayer = Instantiate(cubePrefab, transform);
-            newPlayer.layer = gameObject.layer;
-            var rndr = newPlayer.GetComponent<Renderer>();
-            rndr.material.color = clientColor;
+            SetLayer(newPlayer, cubesLayer);
+            newPlayer.name = playerJoined.UserID.ToString();
+            // var rndr = newPlayer.GetComponent<Renderer>();
+            // rndr.material.color = clientColor;
             cubes.Add(playerJoined.UserID, newPlayer);
         }
     }
@@ -231,7 +382,9 @@ public class CubeClient : MonoBehaviour
     {
         foreach (var userCubePair in cubes)
         {
-            if (!prevSnapshot.UserStates.ContainsKey(userCubePair.Key) || userCubePair.Key == userID)
+            if (!prevSnapshot.UserStates.ContainsKey(userCubePair.Key) // snapshot where player did not exist yet 
+                    || userCubePair.Key == userID // no interpolation for client's own cube
+                    || !userCubePair.Value.activeSelf) // player is dead and has not respawned
                 continue;
             
             var position = new Vector3();
@@ -259,8 +412,71 @@ public class CubeClient : MonoBehaviour
         return currentSnapValue + (nextSnapValue - currentSnapValue) * t;
     }
 
-    private void OnDestroy() {
-        sendChannel.Disconnect();
-        recvChannel.Disconnect();
+    private void OnDestroy()
+    {
+        var packet = Packet.Obtain();
+        Serializer.PlayerDisconnectSerialize(packet.buffer, userID);
+        packet.buffer.Flush();
+        
+        channel.Send(packet, serverEndpoint);
+        packet.Free();
+        channel.Disconnect();
+    }
+    
+    private void AckShotBroadcast()
+    {
+        var newPacket = Packet.Obtain();
+        Serializer.ClientSerializeShotBroadcastAck(shotBroadcast, newPacket.buffer);
+        newPacket.buffer.Flush();
+        
+        var remoteEp = serverEndpoint;
+        channel.Send(newPacket, remoteEp);
+        newPacket.Free();
+    }
+
+    private void AckPlayerJoined()
+    {
+        var packet = Packet.Obtain();
+        Serializer.PlayerJoinedAck(packet.buffer, playersToInstantiate.UserID);
+        packet.buffer.Flush();
+        
+        var remoteEp = serverEndpoint;
+        channel.Send(packet, remoteEp);
+        packet.Free();
+    }
+
+    private static void SetLayer(GameObject go, int layer)
+    {
+        go.layer = layer;
+        foreach (Transform child in go.transform)
+        {
+            var childGO = child.gameObject;
+            childGO.layer = layer;
+            SetLayer(childGO, layer);
+        }
+    }
+
+    private void SetLatency()
+    {
+        if (Input.GetKeyDown(KeyCode.Alpha1))
+        {
+            networkLatency = 0;
+        }
+        else if (Input.GetKeyDown(KeyCode.Alpha2))
+        {
+            networkLatency = 100;
+        }
+        else if (Input.GetKeyDown(KeyCode.Alpha3))
+        {
+            networkLatency = 200;
+        }
+        else if (Input.GetKeyDown(KeyCode.Alpha4))
+        {
+            networkLatency = 300;
+        }
+        else if (Input.GetKeyDown(KeyCode.Alpha5))
+        {
+            networkLatency = 400;
+        }
     }
 }

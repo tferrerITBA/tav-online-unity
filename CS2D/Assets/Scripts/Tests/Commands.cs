@@ -9,6 +9,7 @@ namespace Tests
         private bool left;
         private bool right;
         private bool space;
+        private float rotation;
 
         public Commands(int userID)
         {
@@ -16,7 +17,7 @@ namespace Tests
             seq = 1;
         }
 
-        public Commands(int seq, int userID, bool up, bool down, bool left, bool right, bool space)
+        public Commands(int seq, int userID, bool up, bool down, bool left, bool right, bool space, float rotation)
         {
             this.seq = seq;
             this.userID = userID;
@@ -25,6 +26,7 @@ namespace Tests
             this.left = left;
             this.right = right;
             this.space = space;
+            this.rotation = rotation;
         }
 
         public Commands(Commands o)
@@ -36,6 +38,7 @@ namespace Tests
             left = o.left;
             right = o.right;
             space = o.space;
+            rotation = o.rotation;
         }
         
         public bool HasCommand()
@@ -104,6 +107,12 @@ namespace Tests
         {
             get => space;
             set => space = value;
+        }
+
+        public float Rotation
+        {
+            get => rotation;
+            set => rotation = value;
         }
     }
 }

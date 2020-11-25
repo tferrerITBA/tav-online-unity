@@ -5,6 +5,9 @@ TagManager:
   serializedVersion: 2
   tags:
   - Food
+  - Gun
+  - MuzzleFlash
+  - PlayerUI
   layers:
   - Default
   - TransparentFX
@@ -35,7 +38,7 @@ TagManager:
   - 
   - 
   - 
-  - 
+  - OwnPlayer
   - 
   - 
   m_SortingLayers:
