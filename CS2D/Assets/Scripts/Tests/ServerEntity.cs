@@ -53,16 +53,7 @@ public class ServerEntity : MonoBehaviour
             Destroy(gameObject);
             return;
         }
-        try
-        {
-            playerJoinChannel = new Channel(PlayerJoinPort);
-        }
-        catch (Exception e)
-        {
-            PlayerPrefs.SetString("connectionError", e.Message);
-            PlayerPrefs.Save();
-            SceneManager.LoadScene(0); // back to main menu
-        }
+        playerJoinChannel = new Channel(PlayerJoinPort); // TODO: handle port already in use
         sendRate = 1f / pps;
         GameObject.FindGameObjectWithTag("Gun").SetActive(false);
         GameObject.FindGameObjectWithTag("PlayerUI").SetActive(false);

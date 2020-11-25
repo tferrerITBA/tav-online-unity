@@ -49,7 +49,7 @@ MonoBehaviour:
   isPlaying: 0
   cubePrefab: {fileID: 5505638626294744671, guid: ad55325f65e5348a6a97a91ea36e040f,
     type: 3}
-  playerCubePrefab: {fileID: 5505638626294744671, guid: 907f2d2d904d24dc49abefdfc2e7d188,
+  playerCubePrefab: {fileID: 5505638626294744671, guid: b5e313717b7a149159bc70f1bf843a59,
     type: 3}
   ownPlayerLayer: 29
   ownCube: {fileID: 0}

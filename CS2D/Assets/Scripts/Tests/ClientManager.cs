@@ -13,13 +13,10 @@ public class ClientManager : MonoBehaviour
     private Channel channel;
     
     public CubeClient clientPrefab;
-    // private Dictionary<int, CubeClient> cubeClients = new Dictionary<int, CubeClient>();
     private int startingLayer = 9;
     private int clientCount;
 
     private bool sentConnection;
-
-    // public Dictionary<int, CubeClient> CubeClients => cubeClients;
 
     void Start()
     {
@@ -30,35 +27,14 @@ public class ClientManager : MonoBehaviour
         }
         serverIP = PlayerPrefs.GetString("serverIP", "127.0.0.1");
         clientPort = PlayerPrefs.GetInt("clientPort", 9001);
-        channel = new Channel(clientPort);
-        if (channel == null)
-        {
-            PlayerPrefs.SetString("connectionError", $"Could not connect socket at port {clientPort}");
-            PlayerPrefs.Save();
-            SceneManager.LoadScene(0); 
-        }
+        channel = new Channel(clientPort); // TODO: Handle port in use (exception is caught!)
         serverRemote = new IPEndPoint(IPAddress.Parse(serverIP), ServerEntity.PlayerJoinPort);
         QualitySettings.vSyncCount = 0;
         Application.targetFrameRate = 60;
     }
-
-    // Update is called once per frame
+    
     void Update()
     {
-        /*string str = "";
-        foreach (var cli in cubeClients)
-        {
-            str += $"{cli.Value.displaySeq} ";
-        }
-        Debug.Log(str);*/
-        /*int jaja = -1;
-        foreach (var cli in cubeClients)
-        {
-            if (jaja < cli.Value.displaySeq)
-                jaja = cli.Value.displaySeq;
-        }
-        if (tralala.seq - jaja > 30 && jaja > 0)
-            Debug.Log("PROBLEMA");*/
         if (!sentConnection)
         {
             sentConnection = true;
@@ -79,10 +55,10 @@ public class ClientManager : MonoBehaviour
             var responseData = Serializer.PlayerConnectResponseDeserialize(resp.buffer);
             var userID = responseData[0];
             var srvPort = responseData[1];
-            clientCount++;
             InstantiateClient(userID, srvPort, channel);
             
             clientPort += 2;
+            clientCount++;
             channel = null;
             // channel = new Channel(clientPort); // for new player connections
         }
@@ -91,7 +67,6 @@ public class ClientManager : MonoBehaviour
     private void InstantiateClient(int userID, int srvPort, Channel clientChannel)
     {
         CubeClient cubeClientComponent = Instantiate(clientPrefab);
-        // CubeClients.Add(userID, cubeClientComponent);
 
         var layer = startingLayer + clientCount;
         cubeClientComponent.Initialize(serverIP, srvPort, userID, layer, clientChannel);

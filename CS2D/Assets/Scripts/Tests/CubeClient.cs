@@ -40,8 +40,8 @@ public class CubeClient : MonoBehaviour
     public LayerMask shotsLayer;
     public float shotMaxDistance;
     private RaycastHit shotRaycastHit;
-    public ParticleSystem muzzleFlash;
-    public GameObject camera;
+    private ParticleSystem muzzleFlash;
+    private GameObject mainCamera;
 
     public Color clientColor;
     public float playerSpeed = 5;
@@ -56,7 +56,7 @@ public class CubeClient : MonoBehaviour
         muzzleFlash = GameObject.FindWithTag("MuzzleFlash").GetComponent<ParticleSystem>();
         healthText = GameObject.FindGameObjectWithTag("PlayerUI")
             .transform.GetChild(1).GetComponent<TMP_Text>();
-        camera = GameObject.FindGameObjectWithTag("MainCamera");
+        mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
     }
 
     public void Initialize(string srvIP, int srvPort, int userID, int cubesLayer, Channel channel)
@@ -66,8 +66,7 @@ public class CubeClient : MonoBehaviour
         this.userID = userID;
         this.cubesLayer = cubesLayer;
         SetLayer(gameObject, cubesLayer);
-        shotsLayer = LayerMask.GetMask("Client 2", "Client 1");// LayerMask.GetMask(LayerMask.LayerToName(cubesLayer));
-        Debug.Log("SHOTS LAYER " + cubesLayer);
+        shotsLayer = LayerMask.GetMask("Client 1"); // LayerMask.GetMask(LayerMask.LayerToName(cubesLayer));
         shotMaxDistance = 1000000f;
         clientColor = new Color(Random.value, Random.value, Random.value);
         currentCommands = new Commands(userID);
@@ -101,17 +100,18 @@ public class CubeClient : MonoBehaviour
             }
             else if (pt == PacketType.SHOT_BROADCAST)
             {
+                if (shotBroadcast.PlayerShotID == userID)
+                {
+                    health -= ServerEntity.DamagePerShot;
+                    healthText.text = health.ToString();
+                }
                 if (shotBroadcast.PlayerDied)
                 {
                     cubes[shotBroadcast.PlayerShotID].SetActive(false);
+                    // do something
                 }
                 else
                 {
-                    if (shotBroadcast.PlayerShotID == userID)
-                    {
-                        health -= ServerEntity.DamagePerShot;
-                        healthText.text = health.ToString();
-                    }
                     // An animation or an effect could be shown
                 }
 
@@ -239,20 +239,16 @@ public class CubeClient : MonoBehaviour
         shotCooldown += Time.deltaTime;
         if (/*Input.GetButton("Fire1")*/ Input.GetKeyDown(KeyCode.L) && shotCooldown >= shotInterval)
         {
-            Debug.Log("Attempted to shoot");
             muzzleFlash.Play();
-            var tf = ownCube.transform;
-            Debug.Log($"ownCube: {tf.position} direction {tf.forward}");
-            Debug.Log($"camera: {camera.transform.position} direction {camera.transform.forward}");
             var hit = Physics.Raycast(
-                camera.transform.position,
-                camera.transform.forward, out shotRaycastHit, shotMaxDistance,
+                mainCamera.transform.position,
+                mainCamera.transform.forward, out shotRaycastHit, shotMaxDistance,
                 shotsLayer);
             if (hit)
             {
                 Debug.DrawLine(ownCube.transform.position, shotRaycastHit.point, Color.red, 200);
-                // Debug.Log($"ORIGIN: {tf.position}; DIRECTION: {tf.forward}; HIT: {shotRaycastHit.point}");
                 int otherPlayerId = Int32.Parse(shotRaycastHit.transform.name);
+                
                 Debug.Log($"Shooting player {otherPlayerId}, shot number {shotSeq}");
                 shots.Add(new Shot(shotSeq, userID, otherPlayerId));
                 
@@ -287,8 +283,6 @@ public class CubeClient : MonoBehaviour
         
         if (!ownCube.isGrounded)
         {
-            // Vector3 vel = new Vector3(0, gravity * Time.deltaTime, 0);
-            // cube.Move(vel * Time.deltaTime);
             ownCube.SimpleMove(Vector3.zero);
         }
         Vector3 move = new Vector3();
@@ -306,19 +300,9 @@ public class CubeClient : MonoBehaviour
         
         ownCube.transform.position = userState.Position;
         var rotation = ownCube.transform.rotation.eulerAngles.y;
-
-        int jaja = 0;
-        foreach (var cmd in commands.GetSnapshotUnackedCommands())
+        
+        foreach (Commands cmd in commands.GetSnapshotUnackedCommands())
         {
-            /*if (cmd.Seq > commandSnapshotAck)
-            {
-                if (jaja > 0)
-                    Debug.Log(jaja);
-                break;
-            }
-
-            jaja++;*/
-            
             if (!ownCube.isGrounded)
                 ownCube.SimpleMove(Vector3.zero);
             
@@ -334,7 +318,6 @@ public class CubeClient : MonoBehaviour
         }
 
         ownCube.transform.rotation = Quaternion.Euler(0, rotation, 0);
-        // commands.SnapshotAck(commandSnapshotAck);
     }
 
     private void InstantiateCubes(PlayerJoined playerJoined)
@@ -361,7 +344,7 @@ public class CubeClient : MonoBehaviour
                 if (userID == userStatePair.Key)
                 {
                     SetLayer(player, ownPlayerLayer);
-                    var cam = camera.transform;
+                    var cam = mainCamera.transform;
                     cam.SetParent(ownCube.transform);
                     cam.localPosition = new Vector3(0, 2, 0);
                     cam.localRotation = Quaternion.identity;
@@ -371,7 +354,6 @@ public class CubeClient : MonoBehaviour
                 {
                     SetLayer(player, cubesLayer);
                 }
-                Debug.Log(userStatePair.Key + " " + player.layer);
             }
         }
         else // just instantiate the new player
@@ -414,7 +396,7 @@ public class CubeClient : MonoBehaviour
         }
     }
 
-    private float InterpolateAxis(float currentSnapValue, float nextSnapValue, float t)
+    private static float InterpolateAxis(float currentSnapValue, float nextSnapValue, float t)
     {
         return currentSnapValue + (nextSnapValue - currentSnapValue) * t;
     }
@@ -471,23 +453,23 @@ public class CubeClient : MonoBehaviour
         }
         else if (Input.GetKeyDown(KeyCode.Alpha2))
         {
-            networkLatency = 100;
+            networkLatency = 100; // ms
         }
         else if (Input.GetKeyDown(KeyCode.Alpha3))
         {
-            networkLatency = 200;
+            networkLatency = 200; // ms
         }
         else if (Input.GetKeyDown(KeyCode.Alpha4))
         {
-            networkLatency = 300;
+            networkLatency = 300; // ms
         }
         else if (Input.GetKeyDown(KeyCode.Alpha5))
         {
-            networkLatency = 400;
+            networkLatency = 400; // ms
         }
         else if (Input.GetKeyDown(KeyCode.Alpha6))
         {
-            networkLatency = 500;
+            networkLatency = 500; // ms
         }
     }
 }
