@@ -41,6 +41,7 @@ public class CubeClient : MonoBehaviour
     public float shotMaxDistance;
     private RaycastHit shotRaycastHit;
     public ParticleSystem muzzleFlash;
+    public GameObject camera;
 
     public Color clientColor;
     public float playerSpeed = 5;
@@ -53,7 +54,9 @@ public class CubeClient : MonoBehaviour
     private void Start()
     {
         muzzleFlash = GameObject.FindWithTag("MuzzleFlash").GetComponent<ParticleSystem>();
-        healthText = GameObject.FindGameObjectWithTag("PlayerUI").GetComponent<TMP_Text>();
+        healthText = GameObject.FindGameObjectWithTag("PlayerUI")
+            .transform.GetChild(1).GetComponent<TMP_Text>();
+        camera = GameObject.FindGameObjectWithTag("MainCamera");
     }
 
     public void Initialize(string srvIP, int srvPort, int userID, int cubesLayer, Channel channel)
@@ -63,7 +66,8 @@ public class CubeClient : MonoBehaviour
         this.userID = userID;
         this.cubesLayer = cubesLayer;
         SetLayer(gameObject, cubesLayer);
-        shotsLayer = LayerMask.GetMask(LayerMask.LayerToName(cubesLayer));
+        shotsLayer = LayerMask.GetMask("Client 2", "Client 1");// LayerMask.GetMask(LayerMask.LayerToName(cubesLayer));
+        Debug.Log("SHOTS LAYER " + cubesLayer);
         shotMaxDistance = 1000000f;
         clientColor = new Color(Random.value, Random.value, Random.value);
         currentCommands = new Commands(userID);
@@ -232,14 +236,17 @@ public class CubeClient : MonoBehaviour
 
         SetLatency();
 
+        shotCooldown += Time.deltaTime;
         if (/*Input.GetButton("Fire1")*/ Input.GetKeyDown(KeyCode.L) && shotCooldown >= shotInterval)
         {
-            shotCooldown += Time.deltaTime;
+            Debug.Log("Attempted to shoot");
             muzzleFlash.Play();
             var tf = ownCube.transform;
+            Debug.Log($"ownCube: {tf.position} direction {tf.forward}");
+            Debug.Log($"camera: {camera.transform.position} direction {camera.transform.forward}");
             var hit = Physics.Raycast(
-                tf.position,
-                tf.forward, out shotRaycastHit, shotMaxDistance,
+                camera.transform.position,
+                camera.transform.forward, out shotRaycastHit, shotMaxDistance,
                 shotsLayer);
             if (hit)
             {
@@ -354,7 +361,7 @@ public class CubeClient : MonoBehaviour
                 if (userID == userStatePair.Key)
                 {
                     SetLayer(player, ownPlayerLayer);
-                    var cam = GameObject.FindGameObjectWithTag("MainCamera").transform;
+                    var cam = camera.transform;
                     cam.SetParent(ownCube.transform);
                     cam.localPosition = new Vector3(0, 2, 0);
                     cam.localRotation = Quaternion.identity;
@@ -364,6 +371,7 @@ public class CubeClient : MonoBehaviour
                 {
                     SetLayer(player, cubesLayer);
                 }
+                Debug.Log(userStatePair.Key + " " + player.layer);
             }
         }
         else // just instantiate the new player

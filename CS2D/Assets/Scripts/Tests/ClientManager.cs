@@ -79,9 +79,9 @@ public class ClientManager : MonoBehaviour
             var responseData = Serializer.PlayerConnectResponseDeserialize(resp.buffer);
             var userID = responseData[0];
             var srvPort = responseData[1];
+            clientCount++;
             InstantiateClient(userID, srvPort, channel);
             
-            clientCount++;
             clientPort += 2;
             channel = null;
             // channel = new Channel(clientPort); // for new player connections
