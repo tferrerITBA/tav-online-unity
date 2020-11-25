@@ -7,6 +7,7 @@ public class MouseLook : MonoBehaviour
 {
     public float mouseSensitivity = 100f;
     public float xRotation = 0;
+    private bool isServer;
 
     public Transform player;
 
@@ -14,6 +15,7 @@ public class MouseLook : MonoBehaviour
     {
         if (PlayerPrefs.GetInt("isServer") > 0)
         {
+            isServer = true;
             enabled = false;
             return;
         }
@@ -38,6 +40,8 @@ public class MouseLook : MonoBehaviour
 
     public void ToggleMouseLock()
     {
+        if (isServer)
+            return;
         Cursor.lockState = Cursor.lockState == CursorLockMode.Locked
             ? CursorLockMode.None
             : CursorLockMode.Locked;
@@ -45,6 +49,8 @@ public class MouseLook : MonoBehaviour
 
     public void SetMouseLock(CursorLockMode mode)
     {
+        if (isServer)
+            return;
         Cursor.lockState = mode;
     }
     
