@@ -8,6 +8,7 @@ TagManager:
   - Gun
   - MuzzleFlash
   - PlayerUI
+  - DeathPanel
   layers:
   - Default
   - TransparentFX

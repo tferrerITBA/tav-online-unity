@@ -342,6 +342,15 @@ public class Serializer
         buffer.PutInt(shot.PlayerShotID);
         buffer.PutInt(playerDied ? 1 : 0);
     }
+    
+    public static void ShotBroadcastMessage(BitBuffer buffer, ShotBroadcast shot)
+    {
+        buffer.PutByte((byte) PacketType.SHOT_BROADCAST);
+        buffer.PutInt(shot.ShotId);
+        buffer.PutInt(shot.UserID);
+        buffer.PutInt(shot.PlayerShotID);
+        buffer.PutInt(shot.PlayerDied ? 1 : 0);
+    }
 
     public static void ClientSerializeShotBroadcastAck(ShotBroadcast shotBroadcast, BitBuffer buffer)
     {

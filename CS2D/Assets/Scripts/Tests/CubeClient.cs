@@ -35,6 +35,7 @@ public class CubeClient : MonoBehaviour
     public CharacterController ownCube;
     public int health = 100;
     private TMP_Text healthText;
+    private GameObject deathPanel;
     public float shotInterval = 0.1f;
     public float shotCooldown = 0.1f;
     public LayerMask shotsLayer;
@@ -54,12 +55,11 @@ public class CubeClient : MonoBehaviour
     private void Start()
     {
         muzzleFlash = GameObject.FindWithTag("MuzzleFlash").GetComponent<ParticleSystem>();
-        healthText = GameObject.FindGameObjectWithTag("PlayerUI")
-            .transform.GetChild(1).GetComponent<TMP_Text>();
         mainCamera = GameObject.FindGameObjectWithTag("MainCamera");
     }
 
-    public void Initialize(string srvIP, int srvPort, int userID, int cubesLayer, Channel channel)
+    public void Initialize(string srvIP, int srvPort, int userID, int cubesLayer, 
+        Channel channel, GameObject deathPanel, TMP_Text healthText)
     {
         this.serverEndpoint = new IPEndPoint(IPAddress.Parse(srvIP), srvPort);
         this.channel = channel;
@@ -70,10 +70,19 @@ public class CubeClient : MonoBehaviour
         shotMaxDistance = 1000000f;
         clientColor = new Color(Random.value, Random.value, Random.value);
         currentCommands = new Commands(userID);
+        this.deathPanel = deathPanel;
+        TMP_Text deathText = deathPanel.transform.GetChild(0).GetComponent<TMP_Text>();
+        deathPanel.SetActive(false);
+        deathText.text = "You were killed";
+        this.healthText = healthText;
+        healthText.enabled = true;
     }
 
     private void Update()
     {
+        if (health <= 0)
+            return;
+        
         var packet = channel.GetPacket();
 
         while (packet != null)
@@ -92,7 +101,10 @@ public class CubeClient : MonoBehaviour
                 Destroy(cubes[playerDisconnect].gameObject);
                 cubes.Remove(playerDisconnect);
                 if (playerDisconnect == userID)
+                {
+                    deathPanel.SetActive(true);
                     Destroy(this);
+                }
             }
             else if (pt == PacketType.UPDATE_MESSAGE && ownCube) // a Snapshot was just received
             {
@@ -100,15 +112,19 @@ public class CubeClient : MonoBehaviour
             }
             else if (pt == PacketType.SHOT_BROADCAST)
             {
-                if (shotBroadcast.PlayerShotID == userID)
+                bool playerDamaged = shotBroadcast.PlayerShotID == userID;
+                if (playerDamaged)
                 {
                     health -= ServerEntity.DamagePerShot;
                     healthText.text = health.ToString();
                 }
                 if (shotBroadcast.PlayerDied)
                 {
+                    if (playerDamaged)
+                    {
+                        deathPanel.SetActive(true);
+                    }
                     cubes[shotBroadcast.PlayerShotID].SetActive(false);
-                    // do something
                 }
                 else
                 {
@@ -163,7 +179,7 @@ public class CubeClient : MonoBehaviour
 
     private void FixedUpdate()
     {
-        if (!ownCube)
+        if (!ownCube || health <= 0)
             return;
         // if (currentCommands.HasCommand())
         // {

@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Net;
+using TMPro;
 using UnityEngine;
 using UnityEngine.SceneManagement;
 using Random = UnityEngine.Random;
@@ -17,6 +18,9 @@ public class ClientManager : MonoBehaviour
     private int clientCount;
 
     private bool sentConnection;
+
+    public GameObject uiPanel;
+    public TMP_Text healthText;
 
     void Start()
     {
@@ -69,7 +73,8 @@ public class ClientManager : MonoBehaviour
         CubeClient cubeClientComponent = Instantiate(clientPrefab);
 
         var layer = startingLayer + clientCount;
-        cubeClientComponent.Initialize(serverIP, srvPort, userID, layer, clientChannel);
+        cubeClientComponent.Initialize(serverIP, srvPort, userID, layer, clientChannel,
+            uiPanel, healthText);
         cubeClientComponent.gameObject.SetActive(true);
     }
 

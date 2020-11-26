@@ -7,6 +7,7 @@ public class PauseMenu : MonoBehaviour
 {
     public GameObject pauseMenu;
     public GameObject healthHUD;
+    public GameObject deathHUD;
     public MouseLook cam;
 
     // Update is called once per frame
@@ -18,6 +19,8 @@ public class PauseMenu : MonoBehaviour
             pauseMenu.SetActive(!pauseMenu.activeSelf);
             if (!(PlayerPrefs.GetInt("isServer") > 0))
                 cam.ToggleMouseLock();
+            if (deathHUD.activeSelf)
+                deathHUD.SetActive(false);
         }
     }
 

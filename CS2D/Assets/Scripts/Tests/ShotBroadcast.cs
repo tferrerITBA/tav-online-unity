@@ -9,7 +9,7 @@ public class ShotBroadcast
     public ShotBroadcast()
     {
     }
-    
+
     public int ShotId
     {
         get => shotId;

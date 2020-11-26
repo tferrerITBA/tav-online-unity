@@ -47,6 +47,8 @@ public class ServerEntity : MonoBehaviour
     private Dictionary<int, List<int>> pendingPlayerJoined = new Dictionary<int, List<int>>();
     private List<int> playersToDisconnect = new List<int>();
     
+    private HashSet<int> playersDied = new HashSet<int>();
+    
     void Awake() {
         if (!(PlayerPrefs.GetInt("isServer") > 0))
         {
@@ -80,6 +82,7 @@ public class ServerEntity : MonoBehaviour
 
         if (pendingPlayerJoined.Count > 0)
             ResendTimeoutPlayerJoined();
+        ResendTimeoutShot();
 
         if (serverConnected)
         {
@@ -156,6 +159,34 @@ public class ServerEntity : MonoBehaviour
         playerJoinedAckTime += Time.deltaTime;
     }
 
+    private void ResendTimeoutShot()
+    {
+        if (shotAckTime > ShotAckTimeout)
+        {
+            shotAckTime = 0;
+            foreach (var clientPair in clients)
+            {
+                Dictionary<ShotBroadcast, List<int>> pendingAcks = clients[clientPair.Key].unackedShotBroadcasts;
+                foreach (var pendingShot in pendingAcks)
+                {
+                    foreach (var clientID in pendingShot.Value)
+                    {
+                        var cli = clients[clientID];
+                        Channel channel = cli.channel;
+                        var packet = Packet.Obtain();
+                        Serializer.ShotBroadcastMessage(packet.buffer, pendingShot.Key);
+                        packet.buffer.Flush();
+            
+                        var remoteEp = cli.dest;
+                        channel.Send(packet, remoteEp);
+
+                        packet.Free();
+                    }
+                }
+            }
+        }
+    }
+
     private void FixedUpdate()
     {
         foreach (var client in clients)
@@ -178,10 +209,19 @@ public class ServerEntity : MonoBehaviour
 
             foreach (var shot in cli.pendingShots)
             {
-                ExecuteShot(shot);
+                var deadPlayer = ExecuteShot(shot);
+                if (deadPlayer > 0)
+                    playersDied.Add(deadPlayer);
             }
             cli.pendingCommands.Clear();
             cli.pendingShots.Clear();
+            foreach (var deadPlayer in playersDied)
+            {
+                Destroy(clients[deadPlayer].characterController.gameObject);
+                clients[deadPlayer].channel.Disconnect();
+                clients.Remove(deadPlayer);
+            }
+            playersDied.Clear();
         }
     }
 
@@ -258,7 +298,7 @@ public class ServerEntity : MonoBehaviour
                 var packet = Packet.Obtain();
 
                 var cmdSeq = (pendingCommands.Count > 0)
-                    ? pendingCommands[0].Seq - 1
+                    ? pendingCommands[0].Seq - 1 // only send command Seq that has been applied to snapshot
                     : lastCommandsReceived;  
                 Serializer.ServerWorldSerialize(confirmedClients, packet.buffer, seq,
                     serverTime, cmdSeq);
@@ -289,7 +329,7 @@ public class ServerEntity : MonoBehaviour
         cubeCharacterCtrl.Move(move);
     }
 
-    private void ExecuteShot(Shot shot)
+    private int ExecuteShot(Shot shot)
     {
         shotCount++;
         clients[shot.PlayerShotID].health -= DamagePerShot;
@@ -297,6 +337,9 @@ public class ServerEntity : MonoBehaviour
         bool playerDied = clients[shot.PlayerShotID].health <= 0;
         // var clientPorts = clientManager.cubeClients.Values.Select(x => x.channel).ToList();
         BroadcastShot(shot, playerDied);
+        if (playerDied)
+            return shot.PlayerShotID;
+        return -1;
     }
 
     private void BroadcastShot(Shot shot, bool playerDied)
