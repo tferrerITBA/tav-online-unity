@@ -246,6 +246,7 @@ public class ServerEntity : MonoBehaviour
                 
                 int userID = cubeClientPair.Key;
                 var cubeClient = cubeClientPair.Value;
+                var pendingCommands = cubeClientPair.Value.pendingCommands;
                 int lastCommandsReceived = clients[userID].cmdSeqReceived;
                 
                 Dictionary<int, ServerClientInfo> confirmedClients = clients.Where(
@@ -256,8 +257,11 @@ public class ServerEntity : MonoBehaviour
                 // Serialize snapshot
                 var packet = Packet.Obtain();
 
+                var cmdSeq = (pendingCommands.Count > 0)
+                    ? pendingCommands[0].Seq - 1
+                    : lastCommandsReceived;  
                 Serializer.ServerWorldSerialize(confirmedClients, packet.buffer, seq,
-                    serverTime, lastCommandsReceived);
+                    serverTime, cmdSeq);
                 packet.buffer.Flush();
                 
                 var remoteEp = cubeClientPair.Value.dest;
